@@ -1,6 +1,6 @@
 {
-    "name": "xjryanse/order",
-    "description": "可复用的订单管理模块，基于TP框架",
+    "name": "xjryanse/goods",
+    "description": "可复用的商品管理模块，基于TP框架",
     "type": "library",
     "authors": [
         {
@@ -12,7 +12,7 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-          "xjryanse\\order\\": "src/"
+          "xjryanse\\goods\\": "src/"
         }
     }
 }
