@@ -6,8 +6,8 @@ namespace xjryanse\goods\service;
  */
 class GoodsService
 {
-    use \app\common\traits\InstTrait;
-    use \app\common\traits\MainModelTrait;
+    use \xjryanse\traits\InstTrait;
+    use \xjryanse\traits\MainModelTrait;
 
     protected static $mainModel;
     protected static $mainModelClass    = '\\xjryanse\\goods\\model\\Goods';
