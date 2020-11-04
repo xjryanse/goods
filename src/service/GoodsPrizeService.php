@@ -12,4 +12,12 @@ class GoodsPrizeService
     protected static $mainModel;
     protected static $mainModelClass    = '\\xjryanse\\goods\\model\\GoodsPrize';
 
+    /*
+     * 用商品id查询，并绑定键
+     */
+    public static function selectByGoodsIdBindKey( $goodsId )
+    {
+        return self::mainModel()->where('goods_id',$goodsId)->column('*','prize_key');
+    }
+    
 }
