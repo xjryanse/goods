@@ -13,10 +13,15 @@ class GoodsPrizeTplService
     protected static $mainModelClass    = '\\xjryanse\\goods\\model\\GoodsPrizeTpl';
 
     /**
-     * 主key取价格key
+     * 销售类型和主key取价格key
      */
-    public static function columnPrizeKeysByMainKey( $mainKey ,$con=[] ){
-        $con[] = [ 'main_key','=',$mainKey ];
+    public static function columnPrizeKeysBySaleTypeMainKey( $saleType, $mainKey ,$con=[] ){
+        if( $saleType ){
+            $con[] = [ 'sale_type','=',$saleType ];
+        }
+        if( $mainKey ){
+            $con[] = [ 'main_key','=',$mainKey ];
+        }
         return self::mainModel()->where( $con )->column('prize_key');
     }
     
