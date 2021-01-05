@@ -38,6 +38,28 @@ class GoodsPrizeTplService {
     }
 
     /**
+     * 获取顶级价格key：
+     * 用于计算总价
+     */
+    public static function getFinalKeys( $saleType, $belongRole = '')
+    {
+        $con[] = ['sale_type','=',$saleType];
+        $con[] = ['p_key','=',''];
+        if($belongRole){
+            $con[] = ['belong_role','in',$belongRole];
+        }
+        return self::mainModel()->where( $con )->column('prize_key');
+    }
+    /**
+     * 根据销售类型，取归属角色列表
+     */
+    public static function columnBelongRolesBySaleType( $saleType )
+    {
+        $con[] = ['sale_type','=',$saleType];
+        return self::mainModel()->where( $con )->column('distinct belong_role');
+    }
+
+    /**
      *
      */
     public function fId() {

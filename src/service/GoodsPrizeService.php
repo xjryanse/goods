@@ -51,6 +51,38 @@ class GoodsPrizeService {
         $con[] = ['prize_key', '=', $prizeKey];
         return self::find($con);
     }
+    /**
+     * 获取商品价格
+     * @param type $goodsId     商品id
+     * @param type $prizeKeys   过滤条件
+     */
+    public static function sumGoodsPrizeByPrizeKeys( $goodsId ,$prizeKeys )
+    {
+        $con[] = ['goods_id','=',$goodsId];
+        $con[] = ['prize_key','in',$prizeKeys];
+        return self::sum($con, 'prize');
+    }
+    
+    /*
+     * 根据归属角色，获取商品总价格
+     */
+    public static function getGoodsPrizeSumByBelongRole( $goodsId )
+    {
+        $saleType       = GoodsService::getInstance( $goodsId )->fSaleType();
+        $belongRoles    = GoodsPrizeTplService::columnBelongRolesBySaleType( $saleType );
+
+        $prize = [];
+        //各角色价格
+        foreach( $belongRoles as $belongRole ){
+            $finalKeys          = GoodsPrizeTplService::getFinalKeys ( $saleType, $belongRole );
+            $prize[$belongRole] = self:: sumGoodsPrizeByPrizeKeys( $goodsId, $finalKeys );
+        }
+        //最终合并价格
+        $finalKeys      = GoodsPrizeTplService::getFinalKeys( $saleType, $belongRoles );
+        $prize['total'] = self:: sumGoodsPrizeByPrizeKeys( $goodsId, $finalKeys );
+
+        return $prize;
+    }
 
     /**
      *
