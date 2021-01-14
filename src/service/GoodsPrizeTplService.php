@@ -12,7 +12,28 @@ class GoodsPrizeTplService {
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrizeTpl';
-
+    
+    /**
+     * 获取始祖key，顶级无父key的key
+     */
+    public static function getAncestorKey( $saleType, $belongRole )
+    {
+        $con[] = ['sale_type','=',$saleType ];
+        $con[] = ['belong_role','=',$belongRole ];
+        $con[] = ['p_key','=','' ];
+        $info = self::find( $con );
+        return $info ? $info['prize_key'] : '';
+    }
+    /**
+     * 价格key取父价格key
+     */
+    public static function prizeKeyGetPKey( $prizeKey )
+    {
+        $con[] = ['prize_key','=',$prizeKey];
+        $info = self::find($con); 
+        return $info ? $info['p_key'] : '';
+    }
+    
     /**
      * 销售类型和主key取价格key
      */

@@ -16,33 +16,24 @@ class GoodsService {
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\Goods';
 
     /**
-     * 分页的查询
-     * @param type $con
-     * @param type $order
-     * @param type $perPage
-     * @return type
+     * 额外详情信息
      */
-    public static function paginate( $con = [],$order='',$perPage=10)
+    protected static function extraDetail( &$item ,$uuid )
     {
-        $conAll = array_merge( $con ,self::commCondition() );
-
-        $res = self::mainModel()->where( $conAll )->order($order)->cache(2)
-                ->paginate( intval($perPage) )
-                ->each(function($item, $key){
-                    //①添加商品来源表数据
-                    $subService = DbOperate::getService( $item->goods_table );
-                    self::addSubServiceData($item, $subService, $item->goods_table_id);
-                    //②添加商品销售分表数据:按类型提取分表服务类
-                    self::addSubData($item, $item->sale_type);
-                    //③添加价格数据
-                    $prize          = GoodsPrizeService::getGoodsPrizeSumByBelongRole( $item->id );
-                    $prizeTableName = GoodsPrizeService::mainModel()->getTable();
-                    foreach( $prize as $key=>$value){
-                        $item[$prizeTableName.'.'.$key] = $value;
-                    }
-                });
-        return $res ? $res->toArray() : [] ;
+        //①添加商品来源表数据
+        $subService = DbOperate::getService( $item['goods_table'] );
+        self::addSubServiceData($item, $subService, $item['goods_table_id']);
+        //②添加商品销售分表数据:按类型提取分表服务类
+        self::addSubData($item, $item['sale_type']);
+        //③添加价格数据
+        $prize          = GoodsPrizeService::getGoodsPrizeSumByBelongRole( $uuid );
+        $prizeTableName = GoodsPrizeService::mainModel()->getTable();
+        foreach( $prize as $key=>$value){
+            $item[$prizeTableName.'.'.$key] = $value;
+        }
+        return $item;
     }
+    
     /**
      * 适用于1个商品多种卖法(如商标：授权，租用，购买)
      * @param type $goodsTableId    商品来源表id

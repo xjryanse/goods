@@ -15,6 +15,26 @@ class GoodsPrizeService {
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrize';
 
+    public static function save( $data ){
+        $pKey   = GoodsPrizeTplService::prizeKeyGetPKey($data['prize_key']);
+        $pInfo  = self::getByGoodsAndPrizeKey( $data['goods_id'], $pKey ); 
+        $data['pid']    = $pInfo ? $pInfo['id'] : '';
+        $res    = self::commSave($data);
+        return $res;
+    }
+    
+    public function update( $data ){
+        $info = $this->get();
+        $prizeKey = isset($data['prize_key'])   ? $data['prize_key']    : $info['prize_key'];
+        $goodsId  = isset($data['goods_id'])    ? $data['goods_id']     : $info['goods_id'];
+
+        $pKey   = GoodsPrizeTplService::prizeKeyGetPKey( $prizeKey );
+        $pInfo  = self::getByGoodsAndPrizeKey( $goodsId, $pKey ); 
+        $data['pid']    = $pInfo ? $pInfo['id'] : '';
+        $res    = $this->commUpdate($data);
+        return $res;
+    }
+    
     /*
      * 用商品id查询，并绑定键
      */
