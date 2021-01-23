@@ -3,6 +3,8 @@
 namespace xjryanse\goods\service;
 
 use xjryanse\logic\Arrays;
+use xjryanse\goods\service\GoodsService;
+use xjryanse\logic\DbOperate;
 
 /**
  * 商品价格设置
@@ -15,26 +17,55 @@ class GoodsPrizeService {
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrize';
 
-    public static function save( $data ){
-        $pKey   = GoodsPrizeTplService::prizeKeyGetPKey($data['prize_key']);
-        $pInfo  = self::getByGoodsAndPrizeKey( $data['goods_id'], $pKey ); 
-        $data['pid']    = $pInfo ? $pInfo['id'] : '';
-        $res    = self::commSave($data);
-        return $res;
+    public function get($cache = 0) {
+        return $this->commGet($cache);
     }
-    
-    public function update( $data ){
-        $info = $this->get();
-        $prizeKey = isset($data['prize_key'])   ? $data['prize_key']    : $info['prize_key'];
-        $goodsId  = isset($data['goods_id'])    ? $data['goods_id']     : $info['goods_id'];
 
-        $pKey   = GoodsPrizeTplService::prizeKeyGetPKey( $prizeKey );
-        $pInfo  = self::getByGoodsAndPrizeKey( $goodsId, $pKey ); 
-        $data['pid']    = $pInfo ? $pInfo['id'] : '';
-        $res    = $this->commUpdate($data);
-        return $res;
+    /**
+     * 额外输入信息
+     */
+    public static function extraPreSave(&$data, $uuid) {
+        if (Arrays::value($data, 'prize_key')) {
+            $prizeKey = Arrays::value($data, 'prize_key');
+            $pKey = GoodsPrizeTplService::prizeKeyGetPKey($prizeKey);
+            $pInfo = self::getByGoodsAndPrizeKey($data['goods_id'], $pKey);
+            $data['pid'] = Arrays::value($pInfo, 'id', null);
+
+            $con[] = ['prize_key', '=', $prizeKey];
+            $info = GoodsPrizeTplService::find($con);
+            $data['prize_name'] = Arrays::value($info, 'prize_name');
+            $data['belong_role'] = Arrays::value($info, 'belong_role');
+        }
+
+        return $data;
     }
-    
+
+    /**
+     * 额外输入信息
+     */
+    public static function extraAfterSave(&$data, $uuid) {
+        //商品价格冗余记录
+        self::getInstance($uuid)->goodsPrizeSync();
+    }
+
+    /**
+     * 商品价格冗余记录（写入来源表）
+     */
+    public function goodsPrizeSync() {
+        //更新价格
+        $prizeKey = $this->fPrizeKey();
+        $prizeValue = $this->fPrize();
+        $goodsId = $this->fGoodsId();
+        $goodsTableName = GoodsService::getInstance($goodsId)->fGoodsTable();
+        $goodsTableId = GoodsService::getInstance($goodsId)->fGoodsTableId();
+
+        $service = DbOperate::getService($goodsTableName);
+        if ($service::mainModel()->hasField($prizeKey)) {
+            return $service::getInstance($goodsTableId)->update([$prizeKey => $prizeValue]);
+        }
+        return false;
+    }
+
     /*
      * 用商品id查询，并绑定键
      */
@@ -71,35 +102,35 @@ class GoodsPrizeService {
         $con[] = ['prize_key', '=', $prizeKey];
         return self::find($con);
     }
+
     /**
      * 获取商品价格
      * @param type $goodsId     商品id
      * @param type $prizeKeys   过滤条件
      */
-    public static function sumGoodsPrizeByPrizeKeys( $goodsId ,$prizeKeys )
-    {
-        $con[] = ['goods_id','=',$goodsId];
-        $con[] = ['prize_key','in',$prizeKeys];
+    public static function sumGoodsPrizeByPrizeKeys($goodsId, $prizeKeys) {
+        $con[] = ['goods_id', '=', $goodsId];
+        $con[] = ['prize_key', 'in', $prizeKeys];
         return self::sum($con, 'prize');
     }
-    
+
     /*
      * 根据归属角色，获取商品总价格
      */
-    public static function getGoodsPrizeSumByBelongRole( $goodsId )
-    {
-        $saleType       = GoodsService::getInstance( $goodsId )->fSaleType();
-        $belongRoles    = GoodsPrizeTplService::columnBelongRolesBySaleType( $saleType );
+
+    public static function getGoodsPrizeSumByBelongRole($goodsId) {
+        $saleType = GoodsService::getInstance($goodsId)->fSaleType();
+        $belongRoles = GoodsPrizeTplService::columnBelongRolesBySaleType($saleType);
 
         $prize = [];
         //各角色价格
-        foreach( $belongRoles as $belongRole ){
-            $finalKeys          = GoodsPrizeTplService::getFinalKeys ( $saleType, $belongRole );
-            $prize[$belongRole] = self:: sumGoodsPrizeByPrizeKeys( $goodsId, $finalKeys );
+        foreach ($belongRoles as $belongRole) {
+            $finalKeys = GoodsPrizeTplService::getFinalKeys($saleType, $belongRole);
+            $prize[$belongRole] = self:: sumGoodsPrizeByPrizeKeys($goodsId, $finalKeys);
         }
         //最终合并价格
-        $finalKeys      = GoodsPrizeTplService::getFinalKeys( $saleType, $belongRoles );
-        $prize['total'] = self:: sumGoodsPrizeByPrizeKeys( $goodsId, $finalKeys );
+        $finalKeys = GoodsPrizeTplService::getFinalKeys($saleType, $belongRoles);
+        $prize['total'] = self:: sumGoodsPrizeByPrizeKeys($goodsId, $finalKeys);
 
         return $prize;
     }

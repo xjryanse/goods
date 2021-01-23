@@ -16,6 +16,58 @@ class GoodsService {
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\Goods';
 
     /**
+     * 保存商品取id
+     * @param type $goodsTable
+     * @param type $goodsTableId    商品表id
+     * @param type $saleType        销售类型    
+     * @param type $data            保存数据
+     * @return type
+     */
+    public static function saveGoodsGetId($goodsTable, $goodsTableId, $saleType, $data) {
+        //删id
+        if (isset($data['id'])) {
+            unset($data['id']);
+        }
+        $con = [];
+        $con[] = ['goods_table_id', '=', $goodsTableId];
+        $con[] = ['sale_type', '=', $saleType];
+        $goodsInfo = GoodsService::find($con);
+        if ($goodsInfo) {
+            $data['id'] = $goodsInfo['id'];
+        }
+        $data['goods_table']    = $goodsTable;
+        $data['goods_table_id'] = $goodsTableId;
+        $data['sale_type']      = $saleType;
+//        dump($goodsTable);
+//        dump($goodsTableId);
+//        dump($goodsInfo);
+//        dump('---保存商品--');
+//        dump($data);
+        
+        $res = GoodsService::saveGetId($data);
+//        dump($res);
+        return $res;
+    }
+    
+    public static function save( $data )
+    {
+        self::checkTransaction();
+        //①商品保存
+        $res = self::commSave( $data );
+//        dump('-----商品保存地导弹----');
+//        dump($data);
+//        dump($res);
+        //②写入商品子表
+        if($data['sale_type']){
+            $subService = self::getSubService( $data['sale_type'] );
+            if( class_exists($subService) ){
+                $subService::save( $res && is_object($res) ? $res->toArray() : $res );
+            }
+        }
+        return $res;
+    }
+    
+    /**
      * 额外详情信息
      */
     protected static function extraDetail( &$item ,$uuid )
@@ -33,6 +85,32 @@ class GoodsService {
         }
         return $item;
     }
+    
+    /**
+     * 额外输入信息
+     */
+    public static function extraAfterSave( &$data, $uuid ){
+        //商品价格冗余记录
+        self::getInstance($uuid)->goodsIsOnSync();
+    }
+    /**
+     * 上下架状态同步记录（写入来源表）
+     */
+    public function goodsIsOnSync() {
+        //更新价格
+        $saleType       = $this->fSaleType();
+        $goodsTableName = $this->fGoodsTable();
+        $goodsTableId   = $this->fGoodsTableId();
+        $isOn           = $this->fIsOn();
+        
+        $field          = camelize( 'is_' .$saleType. '_on' );
+        
+        $service = DbOperate::getService($goodsTableName);
+        if ($service::mainModel()->hasField($field)) {
+            return $service::mainModel()->update(['id'=>$goodsTableId,$field => $isOn]);
+        }
+        return false;
+    }    
     
     /**
      * 适用于1个商品多种卖法(如商标：授权，租用，购买)

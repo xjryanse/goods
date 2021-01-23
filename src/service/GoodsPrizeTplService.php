@@ -46,7 +46,16 @@ class GoodsPrizeTplService {
         }
         return self::mainModel()->where($con)->column('prize_key');
     }
-
+    /**
+     * 根据销售类型取价格key
+     * @param type $saleType
+     * @return type
+     */
+    public static function columnPrizeKeysBySaleType( $saleType )
+    {
+        $con[] = ['sale_type', '=', $saleType ];
+        return self::mainModel()->where( $con )->column('prize_key');
+    }
     /**
      * 销售类型取主key
      * @param type $saleType
