@@ -8,6 +8,7 @@ use xjryanse\logic\DbOperate;
  */
 class GoodsService {
 
+    use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
     use \xjryanse\traits\SubServiceTrait;
@@ -15,6 +16,26 @@ class GoodsService {
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\Goods';
 
+    /**
+     * 根据订单，更新商品状态
+     * @param type $preStatus
+     * @param type $afterStatus
+     * @return type
+     */
+    public function updateGoodsStatus( $preStatus, $afterStatus )
+    {
+        $con[] = ['id','=',$this->uuid ];
+        $data[ 'goods_status' ] = $afterStatus;
+        $res = self::mainModel()->where( $con )->update( $data );
+        //更新商标表或网店表的状态
+        $info = $this->get();
+        if( $info ){
+            $service = DbOperate::getService( $info['goods_table'] );
+            $service::getInstance( $info['goods_table_id'] )->update( $data );
+        }
+        return $res ;
+    }
+    
     /**
      * 保存商品取id
      * @param type $goodsTable
@@ -43,13 +64,13 @@ class GoodsService {
 //        dump($goodsInfo);
 //        dump('---保存商品--');
 //        dump($data);
-        
-        $res = GoodsService::saveGetId($data);
+        self::debug('---保存商品的数据---',$data);
+        $res = GoodsService::commSaveGetId($data);
 //        dump($res);
         return $res;
     }
     
-    public static function save( $data )
+    public static function save1( $data )
     {
         self::checkTransaction();
         //①商品保存
@@ -57,6 +78,7 @@ class GoodsService {
 //        dump('-----商品保存地导弹----');
 //        dump($data);
 //        dump($res);
+        self::debug('----商品保存地导弹---',$data);
         //②写入商品子表
         if($data['sale_type']){
             $subService = self::getSubService( $data['sale_type'] );
@@ -89,7 +111,7 @@ class GoodsService {
     /**
      * 额外输入信息
      */
-    public static function extraAfterSave( &$data, $uuid ){
+    public static function extraAfterSave1( &$data, $uuid ){
         //商品价格冗余记录
         self::getInstance($uuid)->goodsIsOnSync();
     }
@@ -106,7 +128,7 @@ class GoodsService {
         $field          = camelize( 'is_' .$saleType. '_on' );
         
         $service = DbOperate::getService($goodsTableName);
-        if ($service::mainModel()->hasField($field)) {
+        if ($service && $service::mainModel()->hasField($field)) {
             return $service::mainModel()->update(['id'=>$goodsTableId,$field => $isOn]);
         }
         return false;

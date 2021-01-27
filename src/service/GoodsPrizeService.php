@@ -11,6 +11,7 @@ use xjryanse\logic\DbOperate;
  */
 class GoodsPrizeService {
 
+    use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
 
@@ -45,7 +46,7 @@ class GoodsPrizeService {
      */
     public static function extraAfterSave(&$data, $uuid) {
         //商品价格冗余记录
-        self::getInstance($uuid)->goodsPrizeSync();
+//        self::getInstance($uuid)->goodsPrizeSync();
     }
 
     /**
@@ -61,7 +62,9 @@ class GoodsPrizeService {
 
         $service = DbOperate::getService($goodsTableName);
         if ($service::mainModel()->hasField($prizeKey)) {
-            return $service::getInstance($goodsTableId)->update([$prizeKey => $prizeValue]);
+            try{
+                return $service::getInstance($goodsTableId)->update([$prizeKey => $prizeValue]);
+            } catch (\Exception $e){}
         }
         return false;
     }
@@ -81,7 +84,8 @@ class GoodsPrizeService {
         $data['prize'] = $prize;
         $data['goods_id'] = $goodsId;
         $data['prize_key'] = $key;
-
+        
+        self::debug('保存价格的信息',$data);
         $info = GoodsPrizeService::find($con);
         if ($info) {
             $res = GoodsPrizeService::getInstance($info['id'])->update($data);
