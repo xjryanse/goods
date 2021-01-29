@@ -5,6 +5,7 @@ namespace xjryanse\goods\service;
 use xjryanse\logic\Arrays;
 use xjryanse\goods\service\GoodsService;
 use xjryanse\logic\DbOperate;
+use xjryanse\system\service\SystemErrorLogService;
 
 /**
  * 商品价格设置
@@ -46,9 +47,15 @@ class GoodsPrizeService {
      */
     public static function extraAfterSave(&$data, $uuid) {
         //商品价格冗余记录
-//        self::getInstance($uuid)->goodsPrizeSync();
+        self::getInstance($uuid)->goodsPrizeSync();
     }
-
+    /**
+     * 额外输入信息
+     */
+    public static function extraAfterUpdate(&$data, $uuid) {
+        //商品价格冗余记录
+        self::getInstance($uuid)->goodsPrizeSync();
+    }
     /**
      * 商品价格冗余记录（写入来源表）
      */
@@ -64,7 +71,9 @@ class GoodsPrizeService {
         if ($service::mainModel()->hasField($prizeKey)) {
             try{
                 return $service::getInstance($goodsTableId)->update([$prizeKey => $prizeValue]);
-            } catch (\Exception $e){}
+            } catch (\Exception $e){
+                SystemErrorLogService::exceptionLog($e);
+            }
         }
         return false;
     }

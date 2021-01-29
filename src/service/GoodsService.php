@@ -94,6 +94,7 @@ class GoodsService {
      */
     protected static function extraDetail( &$item ,$uuid )
     {
+        if(!$item){ return false;}
         //①添加商品来源表数据
         $subService = DbOperate::getService( $item['goods_table'] );
         self::addSubServiceData($item, $subService, $item['goods_table_id']);
@@ -111,10 +112,17 @@ class GoodsService {
     /**
      * 额外输入信息
      */
-    public static function extraAfterSave1( &$data, $uuid ){
+    public static function extraAfterSave( &$data, $uuid ){
         //商品价格冗余记录
         self::getInstance($uuid)->goodsIsOnSync();
     }
+    /**
+     * 额外输入信息
+     */
+    public static function extraAfterUpdate( &$data, $uuid ){
+        //商品价格冗余记录
+        self::getInstance($uuid)->goodsIsOnSync();
+    }    
     /**
      * 上下架状态同步记录（写入来源表）
      */
@@ -126,7 +134,6 @@ class GoodsService {
         $isOn           = $this->fIsOn();
         
         $field          = camelize( 'is_' .$saleType. '_on' );
-        
         $service = DbOperate::getService($goodsTableName);
         if ($service && $service::mainModel()->hasField($field)) {
             return $service::mainModel()->update(['id'=>$goodsTableId,$field => $isOn]);
