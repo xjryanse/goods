@@ -3,6 +3,8 @@
 namespace xjryanse\goods\service;
 
 use xjryanse\logic\DbOperate;
+
+
 /**
  * 商品明细
  */
@@ -16,6 +18,20 @@ class GoodsService {
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\Goods';
 
+    /**
+     * 商品来源表id，全部商品上架
+     */
+    public static function setOnSaleByGoodsTableId( $goodsTableId ,$goodsTable )
+    {
+        if( $goodsTable ){
+            //库存设为1
+            $con[] = ['goods_table','=', $goodsTable ];
+        }
+        $con[] = ['goods_table_id','=', $goodsTableId ];
+        self::mainModel()->where( $con )->update(['stock'=>1,'is_on'=>1,'goods_status'=> YDZB_GOODS_ONSALE ]);
+        $service = DbOperate::getService($goodsTable);
+        $service::getInstance( $goodsTableId )->update(['goods_status'=>YDZB_GOODS_ONSALE]);
+    }
     /**
      * 根据订单，更新商品状态
      * @param type $preStatus
@@ -96,16 +112,16 @@ class GoodsService {
     {
         if(!$item){ return false;}
         //①添加商品来源表数据
-        $subService = DbOperate::getService( $item['goods_table'] );
-        self::addSubServiceData($item, $subService, $item['goods_table_id']);
+//        $subService = DbOperate::getService( $item['goods_table'] );
+//        self::addSubServiceData($item, $subService, $item['goods_table_id']);
         //②添加商品销售分表数据:按类型提取分表服务类
         self::addSubData($item, $item['sale_type']);
         //③添加价格数据
-        $prize          = GoodsPrizeService::getGoodsPrizeSumByBelongRole( $uuid );
-        $prizeTableName = GoodsPrizeService::mainModel()->getTable();
-        foreach( $prize as $key=>$value){
-            $item[$prizeTableName.'.'.$key] = $value;
-        }
+//        $prize          = GoodsPrizeService::getGoodsPrizeSumByBelongRole( $uuid );
+//        $prizeTableName = GoodsPrizeService::mainModel()->getTable();
+//        foreach( $prize as $key=>$value){
+//            $item[$prizeTableName.'.'.$key] = $value;
+//        }
         return $item;
     }
     
