@@ -6,6 +6,7 @@ use xjryanse\logic\Arrays;
 use xjryanse\goods\service\GoodsService;
 use xjryanse\logic\DbOperate;
 use xjryanse\system\service\SystemErrorLogService;
+use xjryanse\logic\Debug;
 
 /**
  * 商品价格设置
@@ -23,6 +24,24 @@ class GoodsPrizeService {
         return $this->commGet($cache);
     }
 
+    /**
+     * 获取买家应支付金额
+     */
+    public static function buyerPrize( $goodsId , $mainKey = '')
+    {
+        //商品信息
+        $goodsInfo  = GoodsService::getInstance( $goodsId )->get(0);
+        //价格key
+        $keys       = GoodsPrizeTplService::columnPrizeKeysBySaleTypeMainKey( $goodsInfo['sale_type'], $mainKey );
+        $con[]      = ['goods_id','=',$goodsId ];
+        $con[]      = ['prize_key','in',$keys ];
+        Debug::debug('买家应付价格查询条件',$con);
+        //价格
+        $prize      = self::mainModel()->where( $con )->sum('prize');
+        Debug::debug('价格',$prize);
+        return $prize;
+    }    
+    
     /**
      * 额外输入信息
      */
@@ -62,6 +81,7 @@ class GoodsPrizeService {
     public function goodsPrizeSync() {
         //更新价格
         $prizeKey = $this->fPrizeKey();
+        self::getInstance($this->uuid)->get(0); //无缓存取数
         $prizeValue = $this->fPrize();
         $goodsId = $this->fGoodsId();
         $goodsTableName = GoodsService::getInstance($goodsId)->fGoodsTable();
@@ -114,6 +134,18 @@ class GoodsPrizeService {
         $con[] = ['goods_id', '=', $goodsId];
         $con[] = ['prize_key', '=', $prizeKey];
         return self::find($con);
+    }
+    
+    /**
+     * 商品总价
+     * @param type $goodsId     商品id
+     */
+    public static function totalPrize( $goodsId )
+    {
+        $saleType = GoodsService::getInstance( $goodsId )->fSaleType();
+        //祖宗key
+        $prizeKeys = GoodsPrizeTplService::getFinalKeys( $saleType );
+        return self::sumGoodsPrizeByPrizeKeys($goodsId, $prizeKeys);
     }
 
     /**

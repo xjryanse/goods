@@ -238,6 +238,12 @@ class GoodsService {
     public function fStock() {
         return $this->getFFieldValue(__FUNCTION__);
     }
+    /**
+     * 库存量
+     */
+    public function fSellerUserId() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
 
     /**
      * 审核状态：待审核，已同意，已拒绝
