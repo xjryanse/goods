@@ -28,9 +28,9 @@ class GoodsService {
             $con[] = ['goods_table','=', $goodsTable ];
         }
         $con[] = ['goods_table_id','=', $goodsTableId ];
-        self::mainModel()->where( $con )->update(['stock'=>1,'is_on'=>1,'goods_status'=> YDZB_GOODS_ONSALE ]);
+        self::mainModel()->where( $con )->update(['stock'=>1,'is_on'=>1,'goods_status'=> GOODS_ONSALE ]);
         $service = DbOperate::getService($goodsTable);
-        $service::getInstance( $goodsTableId )->update(['goods_status'=>YDZB_GOODS_ONSALE]);
+        $service::getInstance( $goodsTableId )->update(['goods_status'=>GOODS_ONSALE]);
     }
     /**
      * 根据订单，更新商品状态

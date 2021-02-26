@@ -80,6 +80,35 @@ class GoodsPrizeTplService {
         }
         return self::mainModel()->where( $con )->column('prize_key');
     }
+    /*
+     * 是否最终价格
+     */
+    public static function isMainKeyFinal( $mainKey )
+    {
+        $con[]      = ['main_key','in',$mainKey ];
+        return self::isFinal($con);
+    }
+    
+    public static function isPrizeKeyFinal( $mainKey )
+    {
+        $con[]      = ['prize_key','in',$mainKey ];
+        return self::isFinal($con);
+    }
+    /**
+     * 是否最终价格
+     */
+    protected static function isFinal( $con )
+    {
+        //价格
+        $lists      = self::lists( $con );
+        $isFinal    = true;
+        foreach( $lists as $value){
+            if($value['p_key']){
+                $isFinal = false;
+            }
+        }        
+        return $isFinal;        
+    }
     /**
      * 根据销售类型，取归属角色列表
      */

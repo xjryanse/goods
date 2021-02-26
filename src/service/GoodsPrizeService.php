@@ -36,11 +36,23 @@ class GoodsPrizeService {
         $con[]      = ['goods_id','=',$goodsId ];
         $con[]      = ['prize_key','in',$keys ];
         Debug::debug('买家应付价格查询条件',$con);
-        //价格
         $prize      = self::mainModel()->where( $con )->sum('prize');
         Debug::debug('价格',$prize);
         return $prize;
     }    
+    /**
+     * 获取应支付给卖家的金额
+     */
+    public static function sellerPrize( $goodsId , $prizeKey = '')
+    {
+        //价格key
+        $con[]      = ['goods_id','=',$goodsId ];
+        $con[]      = ['prize_key','in',$prizeKey ];
+        Debug::debug('买家应付价格查询条件',$con);
+        $prize      = self::mainModel()->where( $con )->sum('prize');
+        Debug::debug('价格',$prize);
+        return $prize;
+    }
     
     /**
      * 额外输入信息
