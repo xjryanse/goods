@@ -42,7 +42,9 @@ class GoodsService {
     {
         $con[] = ['id','=',$this->uuid ];
         $data[ 'goods_status' ] = $afterStatus;
-        $res = self::mainModel()->where( $con )->update( $data );
+        //过滤数据
+        $updData = DbOperate::dataFilter( self::mainModel()->getTable(),$data);
+        $res = self::mainModel()->where( $con )->update( $updData );
         //更新商标表或网店表的状态
         $info = $this->get();
         if( $info ){
