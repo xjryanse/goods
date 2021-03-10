@@ -87,24 +87,23 @@ class GoodsService {
 //        dump($res);
         return $res;
     }
-    
-    public static function save1( $data )
+
+    public function extraPreDelete()
     {
         self::checkTransaction();
-        //①商品保存
-        $res = self::commSave( $data );
-//        dump('-----商品保存地导弹----');
-//        dump($data);
-//        dump($res);
-        self::debug('----商品保存地导弹---',$data);
-        //②写入商品子表
-        if($data['sale_type']){
-            $subService = self::getSubService( $data['sale_type'] );
-            if( class_exists($subService) ){
-                $subService::save( $res && is_object($res) ? $res->toArray() : $res );
-            }
+    }
+    /**
+     * 删除价格数据
+     */
+    public function extraAfterDelete()
+    {
+        self::checkTransaction();
+        //删商品
+        $con[] = ['goods_id','=',$this->uuid];
+        $lists = GoodsPrizeService::lists( $con );
+        foreach( $lists as $value){
+            GoodsPrizeService::getInstance( $value['id'] )->delete();
         }
-        return $res;
     }
     
     /**
