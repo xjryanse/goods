@@ -69,7 +69,6 @@ class GoodsPrizeService {
             $data['prize_name'] = Arrays::value($info, 'prize_name');
             $data['belong_role'] = Arrays::value($info, 'belong_role');
         }
-
         return $data;
     }
 
@@ -127,7 +126,8 @@ class GoodsPrizeService {
         $data['prize_key'] = $key;
         
         self::debug('保存价格的信息',$data);
-        $info = GoodsPrizeService::find($con);
+        $info = GoodsPrizeService::find($con,0);
+        self::debug('价格查询结果',$info);        
         if ($info) {
             $res = GoodsPrizeService::getInstance($info['id'])->update($data);
         } else {

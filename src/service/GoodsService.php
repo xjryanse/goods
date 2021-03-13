@@ -190,6 +190,10 @@ class GoodsService {
     public function fCompanyId() {
         return $this->getFFieldValue(__FUNCTION__);
     }
+    
+    public function fCustomerId() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }    
 
     /**
      * 商品详情表
