@@ -7,6 +7,7 @@ use xjryanse\goods\service\GoodsService;
 use xjryanse\logic\DbOperate;
 use xjryanse\system\service\SystemErrorLogService;
 use xjryanse\logic\Debug;
+use Exception;
 
 /**
  * 商品价格设置
@@ -37,6 +38,7 @@ class GoodsPrizeService {
         $con[]      = ['prize_key','in',$keys ];
         Debug::debug('买家应付价格查询条件',$con);
         $prize      = self::mainModel()->where( $con )->sum('prize');
+        Debug::debug('买家应付价格查询Sql',self::mainModel()->getLastSql());
         Debug::debug('价格',$prize);
         return $prize;
     }    
@@ -53,11 +55,15 @@ class GoodsPrizeService {
         Debug::debug('价格',$prize);
         return $prize;
     }
-    
+
+    public static function extraPreUpdate(&$data, $uuid) {
+        self::checkTransaction();
+    }
     /**
      * 额外输入信息
      */
     public static function extraPreSave(&$data, $uuid) {
+        self::checkTransaction();
         if (Arrays::value($data, 'prize_key')) {
             $prizeKey = Arrays::value($data, 'prize_key');
             $pKey = GoodsPrizeTplService::prizeKeyGetPKey($prizeKey);
@@ -71,6 +77,50 @@ class GoodsPrizeService {
         }
         return $data;
     }
+    
+    /**
+     * 校验子价格是否符合
+     * @param type $goodsId
+     * @param type $prizeKey
+     * @param type $prizeValue
+     */
+    public static function checkSubMoney( $goodsId , $prizeKey )
+    {
+        //销售类型，和价格key，取父key。
+        $pKey           = GoodsPrizeTplService::prizeKeyGetPKey( $prizeKey );
+        $conPPrize[]    = ['prize_key','=',$pKey ];
+        $pInfo          = GoodsPrizeTplService::find( $conPPrize );
+        $pName          = Arrays::value( $pInfo , 'prize_name');
+            Debug::debug( 'checkSubMoney->$conPPrize',$conPPrize );
+            Debug::debug( 'checkSubMoney->$pInfo',$pInfo );
+
+        $conParent[] = ['goods_id','=',$goodsId];
+        $conParent[] = ['prize_key','=',$pKey];
+        $parentPrize    = GoodsPrizeService::sum( $conParent ,'prize');
+            Debug::debug( 'checkSubMoney->$conParentSql',GoodsPrizeService::mainModel()->getLastSql() );
+            Debug::debug( 'checkSubMoney->$conParent',$conParent );
+            Debug::debug( 'checkSubMoney->$parentPrize',$parentPrize );
+
+        if( $parentPrize ){
+            //父key，取全部子key。
+            $con[]          = ['p_key','=',$pKey ];
+            $allChildKeys   = GoodsPrizeTplService::mainModel()->where( $con )->column('prize_key');
+                Debug::debug( 'checkSubMoney->$con',$con );
+                Debug::debug( 'checkSubMoney->$allChildKeys',$allChildKeys );
+
+            $conChild[]     = ['goods_id','=',$goodsId];  
+            $conChild[]     = ['prize_key','in',$allChildKeys];  
+            $childSum       = GoodsPrizeService::sum( $conChild ,'prize');
+                Debug::debug( 'checkSubMoney->$childSumSql',GoodsPrizeService::mainModel()->getLastSql() );
+                Debug::debug( 'checkSubMoney->$childSum',$childSum );
+            if( $childSum > $parentPrize ){
+                $allChildNames  = GoodsPrizeTplService::mainModel()->where( $con )->column('prize_name');
+                throw new Exception("“". implode('+', $allChildNames)."”共计￥".$childSum."超出了“". $pName ."”￥".$parentPrize);
+            }
+        }
+        //如果父key价格存在，其价格需大于全部子key价格之和
+
+    }
 
     /**
      * 额外输入信息
@@ -78,13 +128,20 @@ class GoodsPrizeService {
     public static function extraAfterSave(&$data, $uuid) {
         //商品价格冗余记录
         self::getInstance($uuid)->goodsPrizeSync();
+        //验证子价格是否不超过父价格
+        $info       = self::getInstance( $uuid )->get(0);
+        $goodsId    = Arrays::value($info, 'goods_id');
+        $prizeKey   = Arrays::value($info, 'prize_key');
+        Debug::debug( 'extraAfterSave->$goodsId',$goodsId );
+        Debug::debug( 'extraAfterSave->$prizeKey',$prizeKey );
+
+        self::checkSubMoney($goodsId, $prizeKey);
     }
     /**
      * 额外输入信息
      */
     public static function extraAfterUpdate(&$data, $uuid) {
-        //商品价格冗余记录
-        self::getInstance($uuid)->goodsPrizeSync();
+        self::extraAfterSave($data, $uuid);
     }
     /**
      * 商品价格冗余记录（写入来源表）
@@ -145,7 +202,7 @@ class GoodsPrizeService {
     public static function getByGoodsAndPrizeKey($goodsId, $prizeKey) {
         $con[] = ['goods_id', '=', $goodsId];
         $con[] = ['prize_key', '=', $prizeKey];
-        return self::find($con);
+        return self::find($con,0);  //涉及实时计算，不可缓存：20210319
     }
     
     /**

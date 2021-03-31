@@ -1,7 +1,7 @@
 <?php
 
 namespace xjryanse\goods\service;
-
+use xjryanse\logic\Arrays;
 /**
  * 商品价格模板
  */
@@ -12,6 +12,22 @@ class GoodsPrizeTplService {
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrizeTpl';
+    
+    /**
+     * 【逐步弃用】GoodsPrizeKeyService同名方法替代
+     * 如果在mainKey中，为买家；
+     * 不在mainKey中，根据 prize_key 查 belong_role
+     */
+    public static function keyBelongRole( $key )
+    {
+        $con1[] = ['main_key','=',$key];
+        if(self::count( $con1)){
+            return 'buyer';
+        }
+        $con2[] = ['prize_key','=',$key ];
+        $info   = self::find( $con2 );
+        return Arrays::value($info, 'belong_role');
+    }
     
     /**
      * 获取始祖key，顶级无父key的key
