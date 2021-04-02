@@ -1,6 +1,7 @@
 <?php
 namespace xjryanse\goods\service;
 
+use xjryanse\logic\Arrays;
 /**
  * 商品价格设置
  */
@@ -13,6 +14,17 @@ class GoodsPrizeKeyService {
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrizeKey';
 
+    /**
+     * 获取某个价格key的依赖key
+     * （通常用于中介平台的加价）
+     */
+    public static function getRelyKey( $prizeKey )
+    {
+        $con[]  = ['prize_key','=',$prizeKey];
+        $info   = self::find( $con );
+        return Arrays::value($info, 'rely_key');
+    }
+    
     public static function getByPrizeKey( $prizeKey )
     {
         $con[] = ['prize_key','=',$prizeKey];
