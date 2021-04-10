@@ -15,6 +15,30 @@ class GoodsPrizeKeyService {
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrizeKey';
 
     /**
+     * 获取全部子key
+     * @param type $prizeKey    价格key
+     * @param type $isDeep      是否深度递归
+     * @return type
+     */
+    public static function getChildKeys( $prizeKey ,$isDeep = false)
+    {
+        $con[]      = ['p_key','=',$prizeKey];
+        $prizeKeys  = self::mainModel()->where( $con )->column('prize_key');
+        if($isDeep && $prizeKeys){
+            $finalKeys  = $prizeKeys;
+            foreach($prizeKeys as $key){
+                $tmpKeys    = self::getChildKeys($key, $isDeep);
+                if($tmpKeys){
+                    $finalKeys  = array_merge($finalKeys,$tmpKeys);
+                }
+            }
+            $prizeKeys = $finalKeys;
+        }
+        
+        return $prizeKeys;
+    }
+    
+    /**
      * 获取某个价格key的依赖key
      * （通常用于中介平台的加价）
      */

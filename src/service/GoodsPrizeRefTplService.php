@@ -29,11 +29,21 @@ class GoodsPrizeRefTplService {
     }
     /**
      * 获取不退金额（扣罚，用于制作合同）
+     * @param type $orderId
+     * @param type $refKey
+     * @param type $cancelBy
+     * @param type $isReal      是否取实际支付的费用
+     *                          （否-用于制作合同；是-用于校验费用）
+     * @return int
      */
-    public static function orderGetNoRef( $orderId, $refKey, $cancelBy = '' )
+    public static function orderGetNoRef( $orderId, $refKey, $cancelBy = '', $isReal = false )
     {
         //退款规则
         $rules      = self::refKeyGetRefs( $refKey ,$cancelBy );
+        Debug::debug( "订单". $orderId. '退款$refKey' , $refKey );
+        Debug::debug( "订单". $orderId. '退款$cancelBy' , $cancelBy );
+        Debug::debug( "订单". $orderId. '退款规则$rules' , $rules );
+
         if(!$rules){
             return 0;
         }
@@ -41,8 +51,25 @@ class GoodsPrizeRefTplService {
         //订单已付金额
         $goodsId    = OrderService::getInstance( $orderId )->fGoodsId();
         foreach( $rules as $value ){
-            $goodsPrize = GoodsPrizeService::getByGoodsAndPrizeKey($goodsId, $value['prize_key']);
-            $tmpMoney   = floatval( Arrays::value($goodsPrize,'prize') ) * $value['rate'];
+//            if($isReal){
+            //实际付的,key取全部子key
+            $allChildKeys = GoodsPrizeKeyService::getChildKeys($value['prize_key'], true);
+            $allKeys      = array_merge($allChildKeys,[$value['prize_key']]);
+            $con    = [];
+            $con[]  = ['statement_type','in',$allKeys];
+            $con[]  = ['has_settle','=',1];
+            $con[]  = ['order_id','=',$orderId];
+            $goodsPrize = FinanceStatementOrderService::sum($con, 'need_pay_prize');
+            Debug::debug( $goodsId.'FinanceStatementOrderService实付金额' , $goodsPrize );
+            Debug::debug( $goodsId.'FinanceStatementOrderService实付金额，末条sql：' , FinanceStatementOrderService::mainModel()->getLastSql() );
+            if(!$goodsPrize){
+                //预设的；一般用于制作合同
+                $goodsPrizeInfo = GoodsPrizeService::getByGoodsAndPrizeKey($goodsId, $value['prize_key']);
+                $goodsPrize     = $goodsPrizeInfo['prize'];
+                Debug::debug( $goodsId.'商品预设金额'.$value['prize_key'] , $goodsPrize );
+            }
+            Debug::debug( "商品".$goodsId.'金额，$isReal：'.$isReal , $goodsPrize );
+            $tmpMoney   = floatval( $goodsPrize ) * $value['rate'];
             Debug::debug( "商品".$goodsId.'收取金额'.$value['prize_key'] , $tmpMoney );
             $noRefMoney += $tmpMoney;
             Debug::debug( "商品".$goodsId.'总收取金额',$noRefMoney);
@@ -72,7 +99,8 @@ class GoodsPrizeRefTplService {
         $paySeller  = FinanceStatementOrderService::mainModel()->where( $con2 )->sum('need_pay_prize'); 
         Debug::debug('orderGetRef,已付供应商',$paySeller);
         //获取不退的金额
-        $noRefMoney = self::orderGetNoRef($orderId, $refKey,$cancelBy);
+        $noRefMoney = self::orderGetNoRef($orderId, $refKey,$cancelBy,true);    //取真实的支付
+        Debug::debug('orderGetRef,'.$refKey.'不退的金额',$noRefMoney);
         //TODO 20210319
         //超出金额才退款
         if($refType == "buyer" && abs($buyerPay) > abs($noRefMoney)){
