@@ -5,6 +5,7 @@ use xjryanse\goods\service\GoodsPrizeService;
 use xjryanse\goods\service\GoodsPrizeTplService;
 use xjryanse\logic\Arrays;
 use xjryanse\logic\Debug;
+use think\Db;
 
 /**
  * 价格逻辑
@@ -30,7 +31,9 @@ class PrizeLogic
             $saveData['company_id'] = Arrays::value($data, 'company_id');
             Debug::debug( '$id' ,$id );
             //价格保存
+            Db::startTrans();
             GoodsPrizeService::saveByKey( $id , $prizeKey, $data[$prizeKey],$saveData);
+            Db::commit();
         }
     }
 }

@@ -7,6 +7,7 @@ use xjryanse\goods\service\GoodsService;
 use xjryanse\logic\DbOperate;
 use xjryanse\system\service\SystemErrorLogService;
 use xjryanse\logic\Debug;
+use think\facade\Request;
 use Exception;
 
 /**

@@ -65,6 +65,7 @@ class GoodsPrizeRefTplService {
             if(!$goodsPrize){
                 //预设的；一般用于制作合同
                 $goodsPrizeInfo = GoodsPrizeService::getByGoodsAndPrizeKey($goodsId, $value['prize_key']);
+                Debug::debug( $goodsId.'商品$goodsPrizeInfo' , $goodsPrizeInfo );
                 $goodsPrize     = $goodsPrizeInfo['prize'];
                 Debug::debug( $goodsId.'商品预设金额'.$value['prize_key'] , $goodsPrize );
             }
