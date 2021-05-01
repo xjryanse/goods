@@ -92,16 +92,16 @@ class GoodsPrizeRefTplService {
         $con1[]     = ['has_settle','=',1];
         $con1[]     = ['statement_cate','=','buyer'];
         $buyerPay   = FinanceStatementOrderService::mainModel()->where( $con1 )->sum('need_pay_prize');    
-        Debug::debug('orderGetRef,客户已付',$buyerPay);
+        Debug::debug('【orderGetRef】,客户已付',$buyerPay);
         //已付供应商金额
         $con2[] = [ 'order_id','=',$orderId ];
         $con2[] = [ 'has_settle','=',1 ];
         $con2[] = [ 'statement_cate','=','seller' ];
         $paySeller  = FinanceStatementOrderService::mainModel()->where( $con2 )->sum('need_pay_prize'); 
-        Debug::debug('orderGetRef,已付供应商',$paySeller);
+        Debug::debug('【orderGetRef】,已付供应商',$paySeller);
         //获取不退的金额
         $noRefMoney = self::orderGetNoRef($orderId, $refKey,$cancelBy,true);    //取真实的支付
-        Debug::debug('orderGetRef,'.$refKey.'不退的金额',$noRefMoney);
+        Debug::debug('【orderGetRef】,'.$refKey.'不退的金额',$noRefMoney);
         //TODO 20210319
         //超出金额才退款
         if($refType == "buyer" && abs($buyerPay) > abs($noRefMoney)){
