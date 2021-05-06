@@ -3,7 +3,7 @@
 namespace xjryanse\goods\service;
 
 use xjryanse\logic\DbOperate;
-
+use xjryanse\logic\Arrays;
 
 /**
  * 商品明细
@@ -116,7 +116,9 @@ class GoodsService {
 //        $subService = DbOperate::getService( $item['goods_table'] );
 //        self::addSubServiceData($item, $subService, $item['goods_table_id']);
         //②添加商品销售分表数据:按类型提取分表服务类
-        self::addSubData($item, $item['sale_type']);
+        if(Arrays::value($item, 'sale_type')){
+            self::addSubData($item, $item['sale_type']);
+        }
         //③添加价格数据
 //        $prize          = GoodsPrizeService::getGoodsPrizeSumByBelongRole( $uuid );
 //        $prizeTableName = GoodsPrizeService::mainModel()->getTable();
@@ -126,6 +128,16 @@ class GoodsService {
         return $item;
     }
     
+    /**
+     * 额外输入信息
+     */
+    public static function extraPreSave( &$data, $uuid ){
+        if(!Arrays::value($data,"goods_table") && !Arrays::value($data,"goods_table_id")){
+            $data['goods_table']    = self::mainModel()->getTable();
+            $data['goods_table_id'] = $uuid;
+        }
+        return $data;
+    }
     /**
      * 额外输入信息
      */
@@ -194,7 +206,12 @@ class GoodsService {
     public function fCustomerId() {
         return $this->getFFieldValue(__FUNCTION__);
     }    
-
+    /**
+     * 商品图片
+     */
+    public function fGoodsPic() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
     /**
      * 商品详情表
      */
@@ -215,7 +232,13 @@ class GoodsService {
     public function fGoodsName() {
         return $this->getFFieldValue(__FUNCTION__);
     }
-
+    /**
+     * 商品价格
+     * @return type
+     */
+    public function fGoodsPrize() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
     /**
      * 归属店铺
      */

@@ -2,7 +2,6 @@
 namespace xjryanse\goods\model;
 
 use xjryanse\logic\DbOperate;
-use xjryanse\logic\ModelQueryCon;
 /**
  * 商品明细
  */
@@ -46,4 +45,22 @@ class Goods extends Base
 
         return $res;
     }
+    
+    /**
+     * 商品图标
+     * @param type $value
+     * @return type
+     */
+    public function getGoodsPicAttr($value) {
+        return self::getImgVal($value);
+    }
+
+    /**
+     * 图片修改器，图片带id只取id
+     * @param type $value
+     * @throws \Exception
+     */
+    public function setGoodsPicAttr($value) {
+        return self::setImgVal($value);
+    }    
 }
