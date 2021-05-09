@@ -62,5 +62,11 @@ class Goods extends Base
      */
     public function setGoodsPicAttr($value) {
         return self::setImgVal($value);
-    }    
+    }
+    public function setSubPicsAttr($value) {
+        return self::setImgVal($value);
+    }
+    public function getSubPicsAttr($value) {
+        return self::getImgVal($value,true);
+    }
 }
