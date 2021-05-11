@@ -114,7 +114,7 @@ class GoodsPrizeRefTplService {
         if($refType == "seller"  && abs($paySeller) > abs($noRefMoney)){
             Debug::debug( "seller" ,$paySeller);
             Debug::debug( $paySeller ,$noRefMoney);
-            return abs($paySeller) - $noRefMoney;
+            return abs($paySeller) - abs($noRefMoney);
         }
         return false;
     }
