@@ -2,6 +2,7 @@
 namespace xjryanse\goods\service;
 
 use xjryanse\logic\Arrays;
+use Exception;
 /**
  * 商品价格设置
  */

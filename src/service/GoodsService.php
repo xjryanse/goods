@@ -4,6 +4,7 @@ namespace xjryanse\goods\service;
 
 use xjryanse\logic\DbOperate;
 use xjryanse\logic\Arrays;
+use xjryanse\logic\Debug;
 
 /**
  * 商品明细
@@ -112,19 +113,9 @@ class GoodsService {
     protected static function extraDetail( &$item ,$uuid )
     {
         if(!$item){ return false;}
-        //①添加商品来源表数据
-//        $subService = DbOperate::getService( $item['goods_table'] );
-//        self::addSubServiceData($item, $subService, $item['goods_table_id']);
-        //②添加商品销售分表数据:按类型提取分表服务类
         if(Arrays::value($item, 'sale_type')){
             self::addSubData($item, $item['sale_type']);
         }
-        //③添加价格数据
-//        $prize          = GoodsPrizeService::getGoodsPrizeSumByBelongRole( $uuid );
-//        $prizeTableName = GoodsPrizeService::mainModel()->getTable();
-//        foreach( $prize as $key=>$value){
-//            $item[$prizeTableName.'.'.$key] = $value;
-//        }
         return $item;
     }
     
@@ -144,6 +135,8 @@ class GoodsService {
     public static function extraAfterSave( &$data, $uuid ){
         //商品价格冗余记录
         self::getInstance($uuid)->goodsIsOnSync();
+        //一口价写入价格表
+        self::getInstance($uuid)->setGoodsPrizeArr();
     }
     /**
      * 额外输入信息
@@ -151,7 +144,9 @@ class GoodsService {
     public static function extraAfterUpdate( &$data, $uuid ){
         //商品价格冗余记录
         self::getInstance($uuid)->goodsIsOnSync();
-    }    
+        //一口价写入价格表
+        self::getInstance($uuid)->setGoodsPrizeArr();
+    }
     /**
      * 上下架状态同步记录（写入来源表）
      */
@@ -168,7 +163,41 @@ class GoodsService {
             return $service::mainModel()->update(['id'=>$goodsTableId,$field => $isOn]);
         }
         return false;
-    }    
+    }
+    /**
+     * 适用于一口价，设定商品价格
+     */
+    public function setGoodsPrizeArr()
+    {
+        $info = $this->get(0);
+        $prizeCon[] = ["sale_type","=",$info['sale_type']];
+        $prizeCon[] = ["company_id","=",session(SESSION_COMPANY_ID)];
+        $prizeKeys  = GoodsPrizeTplService::mainModel()->where($prizeCon)->cache(86400)->select();
+        Debug::debug('setGoodsPrizeArr 的 $prizeKeys',$prizeKeys);
+        foreach( $prizeKeys as $key){
+            $con    = [];
+            $con[]  = ['goods_id','=',$this->uuid ];
+            $con[]  = ['prize_key','=',$key['prize_key']];
+            $prizeId = GoodsPrizeService::mainModel()->where( $con )->value('id');
+            $goodsPrizeArr = [
+                "id"            =>$prizeId ? : self::mainModel()->newId(),
+                "goods_id"      =>$this->uuid ,
+                "company_id"    =>Arrays::value($info, 'company_id'),
+                "prize_key"     =>$key['prize_key'],
+                "prize_name"    =>$key['prize_name'],
+                "belong_role"   =>$key['belong_role'],
+                "prize"         =>Arrays::value($info, $key['prize_key']),
+                "creater"       =>Arrays::value($info, 'creater'),
+            ];
+            if($prizeId){
+                //更新
+                GoodsPrizeService::mainModel()->where('id',$prizeId)->update( $goodsPrizeArr );
+            } else {
+                //新增
+                GoodsPrizeService::mainModel()->save($goodsPrizeArr);
+            }
+        }
+    }
     
     /**
      * 适用于1个商品多种卖法(如商标：授权，租用，购买)
@@ -232,13 +261,7 @@ class GoodsService {
     public function fGoodsName() {
         return $this->getFFieldValue(__FUNCTION__);
     }
-    /**
-     * 商品价格
-     * @return type
-     */
-    public function fGoodsPrize() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
+
     /**
      * 归属店铺
      */

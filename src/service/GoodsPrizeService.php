@@ -46,7 +46,7 @@ class GoodsPrizeService {
     /**
      * 获取应支付给卖家的金额
      */
-    public static function sellerPrize( $goodsId , $prizeKey = '')
+    public static function keysPrize( $goodsId , $prizeKey = '')
     {
         //价格key
         $con[]      = ['goods_id','=',$goodsId ];
