@@ -14,6 +14,11 @@ class GoodsAttrService {
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsAttr';
 
+    public static function getGoodsAttr( $goodsId ){
+        $con[] = ['goods_id','=',$goodsId];
+        return self::mainModel()->where($con)->field('id,attr_name,attr_value')->select();
+    }
+    
     /**
      *
      */

@@ -15,16 +15,15 @@ class GoodsSpu extends Base
     public function getMainPicAttr($value) {
         return self::getImgVal($value);
     }
-
     /**
      * 图片修改器，图片带id只取id
      * @param type $value
      * @throws \Exception
      */
     public function setMainPicAttr($value) {
-        return self::setImgVal($value);
+        $valueRes = self::setImgVal($value);
+        return $valueRes;
     }
-    
     public function setSubPicsAttr($value) {
         return self::setImgVal($value);
     }

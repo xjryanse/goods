@@ -2,6 +2,8 @@
 
 namespace xjryanse\goods\service;
 
+use xjryanse\logic\Arrays;
+
 /**
  * 商品明细
  */
@@ -14,6 +16,66 @@ class GoodsCateService {
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsCate';
 
+    /**
+     * 钩子-保存前
+     */
+    public static function extraPreSave(&$data, $uuid) {
+        $attrKeys = Arrays::value($data, 'attrKeys');
+        if($attrKeys && is_array($attrKeys)){
+            //批量保存
+            GoodsAttrKeyService::saveAll($attrKeys, ['cate_id'=>$uuid]);
+        }
+    }
+    /**
+     * 钩子-保存后
+     */
+    public static function extraAfterSave(&$data, $uuid) {
+
+    }
+    /**
+     * 钩子-更新前
+     */
+    public static function extraPreUpdate(&$data, $uuid) {
+        $attrKeys = Arrays::value($data, 'attrKeys');
+        if($attrKeys && is_array($attrKeys)){
+            $ids = array_column($attrKeys, 'id');
+            $cond   = [];
+            $cond[] = ['cate_id','=',$uuid];
+            $cond[] = ['id','not in',$ids];
+            //删id没在里面的
+            GoodsAttrKeyService::mainModel()->where($cond)->delete();
+            foreach($attrKeys as $value){
+                if(Arrays::value($value, 'id')){
+                    //更新
+                    GoodsAttrKeyService::getInstance($value['id'])->update($value);
+                } else {
+                    //新增
+                    $value['cate_id']   =   $uuid;
+                    GoodsAttrKeyService::save($value);
+                }
+            }
+        }
+    }
+    /**
+     * 钩子-更新后
+     */
+    public static function extraAfterUpdate(&$data, $uuid) {
+
+    }    
+    /**
+     * 钩子-删除前
+     */
+    public function extraPreDelete()
+    {
+
+    }
+    /**
+     * 钩子-删除后
+     */
+    public function extraAfterDelete()
+    {
+
+    }
     /**
      *
      */

@@ -2,6 +2,7 @@
 
 namespace xjryanse\goods\service;
 
+use xjryanse\logic\Arrays;
 /**
  * 商品明细
  */
@@ -14,6 +15,58 @@ class GoodsSpuService {
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsSpu';
 
+    /**
+     * 钩子-保存前
+     */
+    public static function extraPreSave(&$data, $uuid) {
+        
+    }
+    /**
+     * 钩子-保存后
+     */
+    public static function extraAfterSave(&$data, $uuid) {
+
+    }
+    /**
+     * 钩子-更新前
+     */
+    public static function extraPreUpdate(&$data, $uuid) {
+
+    }
+    /**
+     * 钩子-更新后
+     */
+    public static function extraAfterUpdate(&$data, $uuid) {
+
+    }    
+    /**
+     * 钩子-删除前
+     */
+    public function extraPreDelete()
+    {
+
+    }
+    /**
+     * 钩子-删除后
+     */
+    public function extraAfterDelete()
+    {
+
+    }
+    /**
+     * 更新商品价格
+     * 查到最大最小
+     */
+    public function updatePrize(){
+        if(!$this->uuid){
+            return false;
+        }
+        $con[]      = ['spu_id','=',$this->uuid];
+        $prizeArr   = GoodsService::mainModel()->where($con)->order('goodsPrize')->column('goodsPrize');
+        $data['min_prize']    = Arrays::value($prizeArr, 0, 0);
+        $data['max_prize']    = Arrays::value(array_reverse($prizeArr), 0, 0);
+        self::mainModel()->where('id',$this->uuid)->update($data);
+    }
     /**
      *
      */
@@ -43,6 +96,10 @@ class GoodsSpuService {
      * 
      */
     public function fName() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+    //分类id
+    public function fCateId() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 

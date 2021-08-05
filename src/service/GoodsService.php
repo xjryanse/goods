@@ -3,9 +3,10 @@
 namespace xjryanse\goods\service;
 
 use xjryanse\logic\DbOperate;
+use xjryanse\logic\DataCheck;
 use xjryanse\logic\Arrays;
 use xjryanse\logic\Debug;
-
+use xjryanse\store\service\StoreChangeDtlService;
 /**
  * 商品明细
  */
@@ -19,6 +20,20 @@ class GoodsService {
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\Goods';
 
+    /**
+     * 根据spuId，获取id和属性
+     */
+    public static function listsWithAttrBySpuId( $spuId ){
+        $con[] = ['spu_id','=',$spuId];
+        $lists = self::lists($con,'','id,cate_id,goodsPrize,goods_desc,goods_name,goods_pic,spu_id');
+        foreach( $lists as &$value){
+            $cond   = [];
+            $cond[] = ['goods_id','=',$value['id']];
+            $value['attrs']     = GoodsAttrService::mainModel()->where($cond)->column('attr_value','attr_name');
+            $value['stock']    = StoreChangeDtlService::getStockByGoodsId($value['id']);
+        }
+        return $lists;
+    }
     /**
      * 商品来源表id，全部商品上架
      */
@@ -123,6 +138,17 @@ class GoodsService {
      * 额外输入信息
      */
     public static function extraPreSave( &$data, $uuid ){
+        $notices['goods_name']  = '商品名称必须';
+        $notices['goods_pic']   = '商品主图必须';
+        $notices['spu_id']      = 'spu_id必须';
+        $notices['cate_id']     = 'cate_id必须';
+        //20210731谁发谁卖
+        $data['seller_user_id'] = Arrays::value($data, 'seller_user_id') ? : session(SESSION_USER_ID);        
+        if(Arrays::value($data, 'spu_id')){
+            $data['cate_id'] = GoodsSpuService::getInstance(Arrays::value($data, 'spu_id'))->fCateId();
+        }
+        DataCheck::must($data, ['goods_name','goods_pic','spu_id','cate_id'], $notices);
+        
         if(!Arrays::value($data,"goods_table") && !Arrays::value($data,"goods_table_id")){
             $data['goods_table']    = self::mainModel()->getTable();
             $data['goods_table_id'] = $uuid;
@@ -137,6 +163,9 @@ class GoodsService {
         self::getInstance($uuid)->goodsIsOnSync();
         //一口价写入价格表
         self::getInstance($uuid)->setGoodsPrizeArr();
+        //更新spu的价格
+        $spuId = self::getInstance($uuid)->fSpuId();
+        GoodsSpuService::getInstance( $spuId )->updatePrize();
     }
     /**
      * 额外输入信息
@@ -146,6 +175,9 @@ class GoodsService {
         self::getInstance($uuid)->goodsIsOnSync();
         //一口价写入价格表
         self::getInstance($uuid)->setGoodsPrizeArr();
+        //更新spu的价格
+        $spuId = self::getInstance($uuid)->fSpuId();
+        GoodsSpuService::getInstance( $spuId )->updatePrize();
     }
     /**
      * 上下架状态同步记录（写入来源表）
@@ -212,6 +244,14 @@ class GoodsService {
     }
 
     /**
+     * 更新商品的库存
+     * @return type
+     */
+    public function updateStock(){
+        $stock = StoreChangeDtlService::getStockByGoodsId($this->uuid);
+        return $this->update(['stock'=>$stock]);
+    }
+    /**
      *
      */
     public function fId() {
@@ -224,7 +264,9 @@ class GoodsService {
     public function fAppId() {
         return $this->getFFieldValue(__FUNCTION__);
     }
-
+    public function fSpuId() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
     /**
      *
      */

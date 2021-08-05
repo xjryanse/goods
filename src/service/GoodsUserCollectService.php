@@ -3,35 +3,26 @@
 namespace xjryanse\goods\service;
 
 /**
- * 商品明细
+ * 用户收藏商品
  */
-class GoodsAttrValueService {
+class GoodsUserCollectService {
 
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
 
     protected static $mainModel;
-    protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsAttrValue';
+    protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsUserCollect';
 
     /**
-     * 键id保存值
-     * @param String $keyId     字符串
-     * @param Array $attrValues   一维数组
+     * 用户收藏商品
      */
-    public static function keyIdValueSave( $keyId, $attrValues){
-        self::checkTransaction();
-        $cond   = [];
-        $cond[] = ['key_id','=',$keyId];
-        //先删
-        self::mainModel()->where($cond)->delete();
-        $attrValueData = [];
-        foreach($attrValues as $value){
-            $attrValueData[] = ['key_id'=>$keyId,'attr_value'=>$value];
-        }
-        //再加
-        self::saveAll($attrValueData);
+    public static function collect($userId,$spuId){
+        $data['user_id'] = $userId;
+        $data['spu_id'] = $spuId;
+        return self::save($data);
     }
+    
     /**
      *
      */
@@ -60,14 +51,20 @@ class GoodsAttrValueService {
     /**
      * 
      */
-    public function fAttrValue() {
+    public function fName() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 
     /**
      * 
      */
-    public function fKeyId() {
+    public function fMainPic() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+    /**
+     * 
+     */
+    public function fSubPics() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 

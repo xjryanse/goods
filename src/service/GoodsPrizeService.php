@@ -98,11 +98,13 @@ class GoodsPrizeService {
         $conParent[] = ['goods_id','=',$goodsId];
         $conParent[] = ['prize_key','=',$pKey];
         $parentPrize    = GoodsPrizeService::sum( $conParent ,'prize');
+        // 计数
+        $parentPrizeCount    = GoodsPrizeService::count( $conParent );        
             Debug::debug( 'checkSubMoney->$conParentSql',GoodsPrizeService::mainModel()->getLastSql() );
             Debug::debug( 'checkSubMoney->$conParent',$conParent );
             Debug::debug( 'checkSubMoney->$parentPrize',$parentPrize );
 
-        if( $parentPrize ){
+        if( $parentPrizeCount ){
             //父key，取全部子key。
             $con[]          = ['p_key','=',$pKey ];
             $allChildKeys   = GoodsPrizeTplService::mainModel()->where( $con )->column('prize_key');
