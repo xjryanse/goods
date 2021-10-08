@@ -2,6 +2,10 @@
 namespace xjryanse\goods\service;
 
 use xjryanse\logic\Arrays;
+use xjryanse\logic\Debug;
+use xjryanse\order\service\OrderService;
+use xjryanse\order\service\OrderGoodsService;
+use xjryanse\logic\Cachex;
 use Exception;
 /**
  * 商品价格设置
@@ -11,10 +15,12 @@ class GoodsPrizeKeyService {
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    // 静态模型：配置式数据表
+    use \xjryanse\traits\StaticModelTrait;
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrizeKey';
-
+    
     /**
      * 获取全部子key
      * @param type $prizeKey    价格key
@@ -24,7 +30,8 @@ class GoodsPrizeKeyService {
     public static function getChildKeys( $prizeKey ,$isDeep = false)
     {
         $con[]      = ['p_key','=',$prizeKey];
-        $prizeKeys  = self::mainModel()->where( $con )->column('prize_key');
+        $lists      = self::staticConList($con);        
+        $prizeKeys  = array_column($lists,'prize_key');     // self::mainModel()->where( $con )->column('prize_key');
         if($isDeep && $prizeKeys){
             $finalKeys  = $prizeKeys;
             foreach($prizeKeys as $key){
@@ -38,6 +45,68 @@ class GoodsPrizeKeyService {
         
         return $prizeKeys;
     }
+    /**
+     * 订单价格key取价格信息
+     * @param type $orderId
+     * @param type $prizeKey
+     * @return int
+     */
+    public static function orderPrizeKeyGetPrize( $orderId, $prizeKey ){
+        $inst = OrderService::getInstance($orderId)->orderSaleTypeInst();
+        if(!$inst->hasPrizeKey($prizeKey)){
+            // 销售类型没有这个价格，返回0；
+            return 0;
+        }
+        
+        $info       = self::getByPrizeKey($prizeKey);
+        // 费用群组：商品；订单
+        $keyGroup   = Arrays::value($info, 'key_group');
+        // 费用类型：付款；退款
+        $type       = Arrays::value($info, 'type'); 
+        
+        //费用群组：商品
+        if($keyGroup == 'goods'){
+            if( $type == 'ref' ){
+                //【退款】 ref
+                //todo,优化合并，在退款规则中再找一找：20210319
+                Debug::debug('orderPrizeKeyGetPrize，从退款获得的$prizeKey',$prizeKey);
+                // 订单被谁(哪个角色)取消
+                $cancelBy       = OrderService::getInstance($orderId)->fCancelBy();
+                return  GoodsPrizeRefTplService::orderGetRef($orderId, $prizeKey, $cancelBy);
+            } else {
+                //【付款】 pay
+                Debug::debug('orderPrizeKeyGetPrize，从退款获得的$prizeKey',$prizeKey);
+                return OrderService::getInstance( $orderId )->prizeKeyGetPrize( $prizeKey );
+            }
+        }
+        //费用群组：订单：配送费：todo
+        if($keyGroup == 'order'){
+            $prizeKeyInfo = self::getByPrizeKey($prizeKey);
+            if(!$prizeKeyInfo){
+                throw new Exception('价格'.$prizeKey.'不存在，请联系开发');
+            }
+            // 取订单总价
+            // $data['goodsPrize'] = OrderGoodsService::orderGoodsPrize($orderId);
+            $data['goodsPrize'] = OrderService::getInstance($orderId)->orderGoodsPrize();
+            // 计算价格key
+            return GoodsPrizeKeyCalcService::prizeKeyIdCalc($prizeKeyInfo['id'], $data);
+        }
+        //其他非法群组，返回0
+        return 0;
+    }
+    /**
+     * 订单总价；包含配送费等
+     * @param type $orderId
+     */
+    public static function orderPrize($orderId){
+        $inst = OrderService::getInstance($orderId)->orderSaleTypeInst();
+        $buyerPayPrizeKeys = $inst->buyerPayPrizeKey(); 
+        $prize = 0;
+        foreach($buyerPayPrizeKeys as $prizeKey){
+            $prize += GoodsPrizeKeyService::orderPrizeKeyGetPrize($orderId, $prizeKey);
+        }
+        return $prize;        
+    }
     
     /**
      * 获取某个价格key的依赖key
@@ -49,11 +118,17 @@ class GoodsPrizeKeyService {
         $info   = self::find( $con );
         return Arrays::value($info, 'rely_key');
     }
-    
+    /**
+     * 价格key取信息
+     * @param type $prizeKey
+     * @return type
+     */
     public static function getByPrizeKey( $prizeKey )
     {
-        $con[] = ['prize_key','=',$prizeKey];
-        return self::find( $con );
+        return Cachex::funcGet( __CLASS__.'_'.__METHOD__.$prizeKey, function() use ($prizeKey){
+            $con[] = ['prize_key','=',$prizeKey];
+            return self::staticConFind( $con );
+        });
     }
     /**
      * 如果在mainKey中，为买家；
@@ -61,16 +136,19 @@ class GoodsPrizeKeyService {
      */
     public static function keyBelongRole( $key )
     {
-        $con1[] = ['prize_key','=',$key];
-        $info   = self::find( $con1 );
-        if(!$info){
-            throw new Exception('价格'.$key.'不存在');
-        }
-        if( $info['from_role'] == $info['to_role'] ){
-            return $info['from_role'];
-        } else {
-            return str_replace("plate","",$info['from_role'].$info['to_role']);
-        }
+        return Cachex::funcGet( __CLASS__.'_'.__METHOD__.$key, function() use ($key){
+            $con1[] = ['prize_key','=',$key];
+            $info   = self::staticConFind( $con1 );
+            Debug::debug('keyBelongRole的信息',$info);
+            if(!$info){
+                throw new Exception('价格'.$key.'不存在');
+            }
+            if( $info['from_role'] == $info['to_role'] ){
+                return $info['from_role'];
+            } else {
+                return str_replace("plate","",$info['from_role'].$info['to_role']);
+            }
+        });
     }
     
     /**
@@ -93,7 +171,14 @@ class GoodsPrizeKeyService {
     public function fCompanyId() {
         return $this->getFFieldValue(__FUNCTION__);
     }
-
+    /**
+     * goods:表示价格可拆到具体商品：如商品单价；
+     * order:表示价格是整单的价，不可拆分：如配送费；包装费；
+     * @return type
+     */
+    public function fKeyGroup() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }    
     /**
      * 归属价格
      */
@@ -147,6 +232,13 @@ class GoodsPrizeKeyService {
      * 报价
      */
     public function fPrize() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+    /**
+     * 分段字段
+     * @return type
+     */
+    public function fScopeField() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 

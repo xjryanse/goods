@@ -2,6 +2,7 @@
 
 namespace xjryanse\goods\service;
 use xjryanse\logic\Arrays;
+use xjryanse\logic\Cachex;
 /**
  * 商品价格模板
  */
@@ -9,9 +10,22 @@ class GoodsPrizeTplService {
 
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    use \xjryanse\traits\StaticModelTrait;
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrizeTpl';
+    /**
+     * 
+     * @param type $saleType
+     * @param type $companyId   有命令行执行的，故需保留companyId
+     */
+    public static function saleTypeList($saleType,$companyId){
+        return Cachex::funcGet( __CLASS__.'_'.__METHOD__.$saleType.$companyId, function() use ($saleType, $companyId){
+            $prizeCon[] = ["sale_type","=",$saleType];
+            $prizeCon[] = ["company_id","=",$companyId];
+            return GoodsPrizeTplService::mainModel()->where($prizeCon)->cache(86400)->select();
+        });
+    }
     
     /**
      * 【逐步弃用】GoodsPrizeKeyService同名方法替代
@@ -20,6 +34,7 @@ class GoodsPrizeTplService {
      */
     public static function keyBelongRole( $key )
     {
+        return false;
         $con1[] = ['main_key','=',$key];
         if(self::count( $con1)){
             return 'buyer';
@@ -45,9 +60,11 @@ class GoodsPrizeTplService {
      */
     public static function prizeKeyGetPKey( $prizeKey )
     {
-        $con[] = ['prize_key','=',$prizeKey];
-        $info = self::find($con); 
-        return $info ? $info['p_key'] : '';
+        return Cachex::funcGet( __CLASS__.'_'.__METHOD__.$prizeKey, function() use ($prizeKey){
+            $con[] = ['prize_key','=',$prizeKey];
+            $info = self::find($con); 
+            return $info ? $info['p_key'] : '';
+        },true);
     }
     
     /**
@@ -60,7 +77,8 @@ class GoodsPrizeTplService {
         if ($mainKey) {
             $con[] = ['main_key', '=', $mainKey];
         }
-        return self::mainModel()->where($con)->column('prize_key');
+
+        return self::staticConColumn('prize_key', $con);
     }
     /**
      * 根据销售类型取价格key
@@ -69,8 +87,10 @@ class GoodsPrizeTplService {
      */
     public static function columnPrizeKeysBySaleType( $saleType )
     {
-        $con[] = ['sale_type', '=', $saleType ];
-        return self::mainModel()->where( $con )->column('prize_key');
+        return Cachex::funcGet( __CLASS__.'_'.__METHOD__.$saleType, function() use ($saleType){
+            $con[] = ['sale_type', '=', $saleType ];
+            return self::mainModel()->where( $con )->column('prize_key');
+        });
     }
     /**
      * 销售类型取主key
@@ -89,26 +109,32 @@ class GoodsPrizeTplService {
      */
     public static function getFinalKeys( $saleType, $belongRole = '')
     {
-        $con[] = ['sale_type','=',$saleType];
-        $con[] = ['p_key','=',''];
-        if($belongRole){
-            $con[] = ['belong_role','in',$belongRole];
-        }
-        return self::mainModel()->where( $con )->column('prize_key');
+        return Cachex::funcGet( __CLASS__.'_'.__METHOD__.$saleType.$belongRole, function() use ($saleType,$belongRole){
+            $con[] = ['sale_type','=',$saleType];
+            $con[] = ['p_key','=',''];
+            if($belongRole){
+                $con[] = ['belong_role','in',$belongRole];
+            }
+            return self::mainModel()->where( $con )->column('prize_key');
+        });
     }
     /*
      * 是否最终价格
      */
     public static function isMainKeyFinal( $mainKey )
     {
-        $con[]      = ['main_key','in',$mainKey ];
-        return self::isFinal($con);
+        return Cachex::funcGet( __CLASS__.'_'.__METHOD__.$mainKey, function() use ($mainKey){
+            $con[]      = ['main_key','in',$mainKey ];
+            return self::isFinal($con);
+        },true);
     }
     
     public static function isPrizeKeyFinal( $mainKey )
     {
-        $con[]      = ['prize_key','in',$mainKey ];
-        return self::isFinal($con);
+         return Cachex::funcGet( __CLASS__.'_'.__METHOD__.$mainKey, function() use ($mainKey){
+            $con[]      = ['prize_key','in',$mainKey ];
+            return self::isFinal($con);
+        },true);
     }
     /**
      * 是否最终价格
@@ -130,8 +156,10 @@ class GoodsPrizeTplService {
      */
     public static function columnBelongRolesBySaleType( $saleType )
     {
-        $con[] = ['sale_type','=',$saleType];
-        return self::mainModel()->where( $con )->column('distinct belong_role');
+        return Cachex::funcGet( __CLASS__.'_'.__METHOD__.$saleType, function() use ($saleType){
+            $con[] = ['sale_type','=',$saleType];
+            return self::mainModel()->where( $con )->column('distinct belong_role');
+        });
     }
 
     /**

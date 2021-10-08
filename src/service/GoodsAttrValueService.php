@@ -14,6 +14,18 @@ class GoodsAttrValueService {
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsAttrValue';
 
+    public static function cateIdValues( $cateIds ){
+        $con[] = ['b.cate_id','in',$cateIds];
+        $lists = self::mainModel()->field('a.id,a.key_id,a.attr_value,b.cate_id')->alias('a')
+                ->join('w_goods_attr_key b','a.key_id=b.id')->where($con)->select();
+        //按cate_id，聚合为数组
+        $data = [];
+        foreach($lists as &$v){
+            $data[$v['cate_id']][] = $v;
+        }
+        return $data;
+    }
+    
     /**
      * 键id保存值
      * @param String $keyId     字符串

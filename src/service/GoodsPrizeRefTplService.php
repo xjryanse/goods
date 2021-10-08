@@ -104,6 +104,7 @@ class GoodsPrizeRefTplService {
         Debug::debug('【orderGetRef】,'.$refKey.'不退的金额',$noRefMoney);
         //TODO 20210319
         //超出金额才退款
+        Debug::debug('【比较直观】',$refType.'-'.$buyerPay.'='.$paySeller.'=='.$noRefMoney);
         if($refType == "buyer" && abs($buyerPay) > abs($noRefMoney)){
             Debug::debug( "buyer" ,$buyerPay);
             Debug::debug( $buyerPay ,$noRefMoney);

@@ -36,11 +36,12 @@ class GoodsAttrKeyService {
      */
     public static function listWithValue($cateId){
         $con[]  = ['cate_id','=',$cateId];
-        $attrKeys = self::lists( $con , 'id','id,attr_name');
+        $attrKeys = self::lists( $con , 'id','id,attr_name as name');
+        $attrKeys = $attrKeys ? $attrKeys->toArray() : [];
         foreach( $attrKeys as &$value){
             $cond = [];
             $cond[] = ['key_id','=',$value['id']];
-            $value['values'] = GoodsAttrValueService::lists( $cond , '','id,attr_value');
+            $value['values'] = GoodsAttrValueService::lists( $cond , '','id,attr_value as name');
         }
         return $attrKeys;
     }
@@ -53,6 +54,20 @@ class GoodsAttrKeyService {
         $con[] = ['cate_id','=',$cateId];
         $cateAttr = self::mainModel()->where($con)->field('id,cate_id,attr_name')->select();
         return $cateAttr;
+    }
+    /**
+     * 逐步替代getCateAttr方法
+     * @param type $cateIds
+     * @return type
+     */
+    public static function getCateAttrs( $cateIds ){
+        $con[] = ['cate_id','in',$cateIds];
+        $cateAttr = self::mainModel()->where($con)->field('id,cate_id,attr_name')->select();
+        $data = [];
+        foreach($cateAttr as &$v){
+            $data[$v['cate_id']][] = $v;
+        }
+        return $data;
     }
     /**
      *

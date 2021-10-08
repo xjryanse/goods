@@ -7,6 +7,8 @@ use xjryanse\logic\DataCheck;
 use xjryanse\logic\Arrays;
 use xjryanse\logic\Debug;
 use xjryanse\store\service\StoreChangeDtlService;
+use xjryanse\goods\service\GoodsPrizeService;
+use Exception;
 /**
  * 商品明细
  */
@@ -19,9 +21,36 @@ class GoodsService {
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\Goods';
-
+    protected static $fixedFields = ['company_id','creater','create_time','sale_type'];
+    
+    // 商品的价格列表
+    protected $prizeList = [];
+    protected $hasPrizeListQuery = false;
     /**
-     * 根据spuId，获取id和属性
+     * 获取商品价格数组
+     */
+    public function getPrizeList(){
+        Debug::debug('获取前',$this->prizeList);
+        if(!$this->prizeList && !$this->hasPrizeListQuery){
+            $cond[]     = ['goods_id','=',$this->uuid];
+            $lists      = GoodsPrizeService::listSetUudata($cond);
+            $this->prizeList = $lists ? $lists->toArray() : [];
+            //已经有查过了就不再查了，即使为空
+            $this->hasPrizeListQuery = true;
+        }
+        return $this->prizeList;
+    }
+    /**
+     * 设定商品价格数组
+     * @param type $data
+     */
+    public function setPrizeList($data){
+        $this->prizeList            = $data;
+        $this->hasPrizeListQuery    = true;
+    }
+    
+    /**
+     * 弃用，根据spuId，获取id和属性
      */
     public static function listsWithAttrBySpuId( $spuId ){
         $con[] = ['spu_id','=',$spuId];
@@ -33,6 +62,30 @@ class GoodsService {
             $value['stock']    = StoreChangeDtlService::getStockByGoodsId($value['id']);
         }
         return $lists;
+    }
+    
+    /**
+     * 根据spuId，获取id和属性
+     */
+    public static function listsWithAttrBySpuIds( $spuIds ){
+        $con[] = ['spu_id','in',$spuIds];
+        $con[] = ['sellerGoodsPrize','>',0];
+        $listsRaw = self::lists($con,'','id,cate_id,goodsPrize,goods_desc,goods_name,goods_pic,spu_id,stock');
+        $lists = $listsRaw ? $listsRaw->toArray() : [];
+        // 获取商品属性
+        $goodsIds   = array_column($lists, 'id');
+        $goodsAttrs = GoodsAttrService::getGoodsAttr($goodsIds);
+        foreach( $lists as &$value){
+            $value['attrs']    = Arrays::value($goodsAttrs, $value['id'],[]);
+            //库存直接拿冗余值
+            //$value['stock']    = StoreChangeDtlService::getStockByGoodsId($value['id']);
+        }
+        
+        $data = [];
+        foreach($lists as &$v){
+            $data[$v['spu_id']][] = $v;
+        }
+        return $data;
     }
     /**
      * 商品来源表id，全部商品上架
@@ -93,14 +146,9 @@ class GoodsService {
         $data['goods_table']    = $goodsTable;
         $data['goods_table_id'] = $goodsTableId;
         $data['sale_type']      = $saleType;
-//        dump($goodsTable);
-//        dump($goodsTableId);
-//        dump($goodsInfo);
-//        dump('---保存商品--');
-//        dump($data);
         self::debug('---保存商品的数据---',$data);
         $res = GoodsService::commSaveGetId($data);
-//        dump($res);
+
         return $res;
     }
 
@@ -139,20 +187,28 @@ class GoodsService {
      */
     public static function extraPreSave( &$data, $uuid ){
         $notices['goods_name']  = '商品名称必须';
-        $notices['goods_pic']   = '商品主图必须';
+        // $notices['goods_pic']   = '商品主图必须';
         $notices['spu_id']      = 'spu_id必须';
         $notices['cate_id']     = 'cate_id必须';
         //20210731谁发谁卖
         $data['seller_user_id'] = Arrays::value($data, 'seller_user_id') ? : session(SESSION_USER_ID);        
-        if(Arrays::value($data, 'spu_id')){
-            $data['cate_id'] = GoodsSpuService::getInstance(Arrays::value($data, 'spu_id'))->fCateId();
+        $spuId = Arrays::value($data, 'spu_id');
+        if($spuId){
+            $data['cate_id']    = GoodsSpuService::getInstance($spuId)->fCateId();
+            $data['sale_type'] = GoodsSpuService::getInstance($spuId)->fSaleType();
         }
-        DataCheck::must($data, ['goods_name','goods_pic','spu_id','cate_id'], $notices);
+        //'goods_pic',只有normal时，goods_pic必须
+        DataCheck::must($data, ['goods_name','spu_id','cate_id'], $notices);
         
         if(!Arrays::value($data,"goods_table") && !Arrays::value($data,"goods_table_id")){
             $data['goods_table']    = self::mainModel()->getTable();
             $data['goods_table_id'] = $uuid;
         }
+        $prizeKeys  = GoodsPrizeTplService::saleTypeList($data['sale_type'], session(SESSION_COMPANY_ID));
+        if(!$prizeKeys){
+            throw new Exception('销售类型'.$data['sale_type'].'未配置费用信息，请联系开发人员设置');
+        }
+        
         return $data;
     }
     /**
@@ -202,9 +258,7 @@ class GoodsService {
     public function setGoodsPrizeArr()
     {
         $info = $this->get(0);
-        $prizeCon[] = ["sale_type","=",$info['sale_type']];
-        $prizeCon[] = ["company_id","=",session(SESSION_COMPANY_ID)];
-        $prizeKeys  = GoodsPrizeTplService::mainModel()->where($prizeCon)->cache(86400)->select();
+        $prizeKeys  = GoodsPrizeTplService::saleTypeList($info['sale_type'], $info['company_id']);
         Debug::debug('setGoodsPrizeArr 的 $prizeKeys',$prizeKeys);
         foreach( $prizeKeys as $key){
             $con    = [];
@@ -221,16 +275,17 @@ class GoodsService {
                 "prize"         =>Arrays::value($info, $key['prize_key']),
                 "creater"       =>Arrays::value($info, 'creater'),
             ];
+            Debug::debug('setGoodsPrizeArr 的 价格更新',$goodsPrizeArr);
             if($prizeId){
                 //更新
                 GoodsPrizeService::mainModel()->where('id',$prizeId)->update( $goodsPrizeArr );
             } else {
                 //新增
-                GoodsPrizeService::mainModel()->save($goodsPrizeArr);
+                GoodsPrizeService::mainModel()->insert($goodsPrizeArr);
             }
         }
     }
-    
+
     /**
      * 适用于1个商品多种卖法(如商标：授权，租用，购买)
      * @param type $goodsTableId    商品来源表id

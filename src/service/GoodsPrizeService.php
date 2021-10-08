@@ -2,12 +2,12 @@
 
 namespace xjryanse\goods\service;
 
-use xjryanse\logic\Arrays;
 use xjryanse\goods\service\GoodsService;
+use xjryanse\logic\Arrays;
+use xjryanse\logic\Arrays2d;
 use xjryanse\logic\DbOperate;
-use xjryanse\system\service\SystemErrorLogService;
 use xjryanse\logic\Debug;
-use think\facade\Request;
+use xjryanse\system\service\SystemErrorLogService;
 use Exception;
 
 /**
@@ -18,7 +18,7 @@ class GoodsPrizeService {
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
-
+    
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrize';
 
@@ -35,28 +35,60 @@ class GoodsPrizeService {
         $goodsInfo  = GoodsService::getInstance( $goodsId )->get(0);
         //价格key
         $keys       = GoodsPrizeTplService::columnPrizeKeysBySaleTypeMainKey( $goodsInfo['sale_type'], $mainKey );
-        $con[]      = ['goods_id','=',$goodsId ];
-        $con[]      = ['prize_key','in',$keys ];
-        Debug::debug('买家应付价格查询条件',$con);
-        $prize      = self::mainModel()->where( $con )->sum('prize');
-        Debug::debug('买家应付价格查询Sql',self::mainModel()->getLastSql());
+        $prize      = self::keysPrize($goodsId, $keys);
         Debug::debug('价格',$prize);
         return $prize;
     }    
     /**
+     * 传入商品数组，获取买家应支付金额
+     * @param type $goodsArr    数组：goods_id;amount
+     * @param type $mainKey
+     */
+    public static function goodsArrGetBuyerPrize( $goodsArr ,$mainKey = ''){
+        $prizeAll = 0;
+        foreach($goodsArr as &$v){
+            $goodsId = $v['goods_id'];
+            $amount  = $v['amount'];
+            $prize   = self::buyerPrize($goodsId, $mainKey);
+            $prizeAll += $prize * $amount; 
+        }
+        return $prizeAll;
+    }
+    /**
      * 获取应支付给卖家的金额
+     * @param type $goodsId    
+     * @param type $prizeKey
+     * @return type
      */
     public static function keysPrize( $goodsId , $prizeKey = '')
     {
         //价格key
         $con[]      = ['goods_id','=',$goodsId ];
-        $con[]      = ['prize_key','in',$prizeKey ];
+        if($prizeKey){
+            $con[]      = ['prize_key','in',$prizeKey ];
+        }
         Debug::debug('买家应付价格查询条件',$con);
-        $prize      = self::mainModel()->where( $con )->sum('prize');
-        Debug::debug('价格',$prize);
-        return $prize;
+        $prizeLists = GoodsService::getInstance($goodsId)->getPrizeList();
+        $listMatch = Arrays2d::listFilter($prizeLists, $con);
+        return array_sum(array_column($listMatch,'prize'));
     }
-
+    /**
+     * 传入商品数组，获取价格key对应金额
+     * @param type $goodsArr
+     * @param type $prizeKey
+     * @return type
+     */
+    public static function goodsArrGetKeysPrize($goodsArr ,$prizeKey = ''){
+        $prizeAll = 0;
+        foreach($goodsArr as &$v){
+            $goodsId = $v['goods_id'];
+            $amount  = $v['amount'];
+            $prize   = self::keysPrize($goodsId, $prizeKey);
+            $prizeAll += $prize * $amount; 
+        }
+        return $prizeAll;
+    }
+    
     public static function extraPreUpdate(&$data, $uuid) {
         self::checkTransaction();
     }
@@ -124,7 +156,13 @@ class GoodsPrizeService {
         //如果父key价格存在，其价格需大于全部子key价格之和
 
     }
-
+    /**
+     * 批量校验子级价格
+     */
+    public static function checkSubMoneyBatch(){
+        
+    }
+    
     /**
      * 额外输入信息
      */
@@ -156,10 +194,13 @@ class GoodsPrizeService {
         $prizeValue = $this->fPrize();
         $goodsId = $this->fGoodsId();
         $goodsTableName = GoodsService::getInstance($goodsId)->fGoodsTable();
+        if(!$goodsTableName){
+            throw new Exception('商品'.$goodsId .'的goods_table必须');
+        }
         $goodsTableId = GoodsService::getInstance($goodsId)->fGoodsTableId();
 
         $service = DbOperate::getService($goodsTableName);
-        if ($service::mainModel()->hasField($prizeKey)) {
+        if ($prizeKey && $service::mainModel()->hasField($prizeKey)) {
             try{
                 return $service::getInstance($goodsTableId)->update([$prizeKey => $prizeValue]);
             } catch (\Exception $e){
@@ -212,12 +253,13 @@ class GoodsPrizeService {
      * 商品总价
      * @param type $goodsId     商品id
      */
-    public static function totalPrize( $goodsId )
+    public static function totalPrize( $goodsId, $amount = 1 )
     {
         $saleType = GoodsService::getInstance( $goodsId )->fSaleType();
         //祖宗key
         $prizeKeys = GoodsPrizeTplService::getFinalKeys( $saleType );
-        return self::sumGoodsPrizeByPrizeKeys($goodsId, $prizeKeys);
+        $prize = self::sumGoodsPrizeByPrizeKeys($goodsId, $prizeKeys);
+        return $prize * $amount;
     }
 
     /**
