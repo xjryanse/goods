@@ -2,10 +2,14 @@
 
 namespace xjryanse\goods\service;
 
+use xjryanse\logic\Debug;
+use think\Db;
+use Exception;
+
 /**
  * 商品明细
  */
-class GoodsAttrValueService {
+class GoodsBrandService {
 
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
@@ -13,38 +17,7 @@ class GoodsAttrValueService {
     use \xjryanse\traits\MainModelQueryTrait;
 
     protected static $mainModel;
-    protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsAttrValue';
-
-    public static function cateIdValues($cateIds) {
-        $con[] = ['b.cate_id', 'in', $cateIds];
-        $lists = self::mainModel()->field('a.id,a.key_id,a.attr_value,b.cate_id')->alias('a')
-                        ->join('w_goods_attr_key b', 'a.key_id=b.id')->where($con)->select();
-        //按cate_id，聚合为数组
-        $data = [];
-        foreach ($lists as &$v) {
-            $data[$v['cate_id']][] = $v;
-        }
-        return $data;
-    }
-
-    /**
-     * 键id保存值
-     * @param String $keyId     字符串
-     * @param Array $attrValues   一维数组
-     */
-    public static function keyIdValueSave($keyId, $attrValues) {
-        self::checkTransaction();
-        $cond = [];
-        $cond[] = ['key_id', '=', $keyId];
-        //先删
-        self::mainModel()->where($cond)->delete();
-        $attrValueData = [];
-        foreach ($attrValues as $value) {
-            $attrValueData[] = ['key_id' => $keyId, 'attr_value' => $value];
-        }
-        //再加
-        self::saveAll($attrValueData);
-    }
+    protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsBrand';
 
     /**
      *
@@ -72,16 +45,16 @@ class GoodsAttrValueService {
     }
 
     /**
-     * 
+     * 商品详情表
      */
-    public function fAttrValue() {
+    public function fAttrName() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 
     /**
-     * 
+     * 商品详情表id
      */
-    public function fKeyId() {
+    public function fAttrValue() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 

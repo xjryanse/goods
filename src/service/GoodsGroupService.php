@@ -1,6 +1,9 @@
 <?php
 
 namespace xjryanse\goods\service;
+
+use xjryanse\logic\Arrays;
+
 /**
  * 商品明细
  */
@@ -9,6 +12,7 @@ class GoodsGroupService {
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    use \xjryanse\traits\MainModelQueryTrait;
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsGroup';
@@ -17,40 +21,62 @@ class GoodsGroupService {
      * 钩子-保存前
      */
     public static function extraPreSave(&$data, $uuid) {
-
+        
     }
+
     /**
      * 钩子-保存后
      */
 //    public static function extraAfterSave(&$data, $uuid) {
 //
 //    }
+
     /**
      * 钩子-更新前
      */
     public static function extraPreUpdate(&$data, $uuid) {
-
+        
     }
+
     /**
      * 钩子-更新后
      */
 //    public static function extraAfterUpdate(&$data, $uuid) {
 //
 //    }    
+
     /**
      * 钩子-删除前
      */
-    public function extraPreDelete()
-    {
-
+    public function extraPreDelete() {
+        
     }
+
     /**
      * 钩子-删除后
      */
-    public function extraAfterDelete()
-    {
-
+    public function extraAfterDelete() {
+        
     }
+
+    public static function extraDetails($ids) {
+        //数组返回多个，非数组返回一个
+        $isMulti = is_array($ids);
+        if (!is_array($ids)) {
+            $ids = [$ids];
+        }
+        $con[] = ['id', 'in', $ids];
+        $lists = self::selectX($con);
+
+        $spuArr = GoodsSpuService::groupBatchCount('group_id', $ids);
+        foreach ($lists as &$v) {
+            //spu数
+            $v['spuCounts'] = Arrays::value($spuArr, $v['id'], 0);
+        }
+
+        return $isMulti ? $lists : $lists[0];
+    }
+
     /**
      *
      */
@@ -71,10 +97,10 @@ class GoodsGroupService {
     public function fCompanyId() {
         return $this->getFFieldValue(__FUNCTION__);
     }
-    
+
     public function fCustomerId() {
         return $this->getFFieldValue(__FUNCTION__);
-    }    
+    }
 
     /**
      * 商品详情表
@@ -124,6 +150,7 @@ class GoodsGroupService {
     public function fStock() {
         return $this->getFFieldValue(__FUNCTION__);
     }
+
     /**
      * 库存量
      */

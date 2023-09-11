@@ -8,6 +8,8 @@ class GoodsGroup extends Base
 {
     use \xjryanse\traits\ModelTrait;
     
+    public static $picFields = ['group_pic'];
+    
     public function getGroupPicAttr($value) {
         return self::getImgVal($value);
     }

@@ -8,6 +8,9 @@ use xjryanse\logic\DbOperate;
 class Goods extends Base
 {
     use \xjryanse\traits\ModelTrait;
+    
+    public static $picFields = ['goods_pic'];
+
     /**
      * 上下架状态
      * @param type $value

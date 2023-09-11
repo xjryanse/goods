@@ -7,6 +7,11 @@ namespace xjryanse\goods\model;
 class GoodsCate extends Base
 {
     use \xjryanse\traits\ModelTrait;
+    /**
+     * 图片字段
+     * @var type 
+     */
+    public static $picFields = ['cate_pic'];
     
     public function getCatePicAttr($value) {
         return self::getImgVal($value);

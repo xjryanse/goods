@@ -1,4 +1,5 @@
 <?php
+
 namespace xjryanse\goods\service;
 
 /**
@@ -9,6 +10,7 @@ class GoodsPrizeGroupService {
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    use \xjryanse\traits\MainModelQueryTrait;
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrizeGroup';
@@ -33,6 +35,7 @@ class GoodsPrizeGroupService {
     public function fCompanyId() {
         return $this->getFFieldValue(__FUNCTION__);
     }
+
     /**
      * 排序
      */

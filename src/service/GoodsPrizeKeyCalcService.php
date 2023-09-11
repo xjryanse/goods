@@ -1,9 +1,12 @@
 <?php
 
 namespace xjryanse\goods\service;
+
 use xjryanse\logic\Arrays;
 use xjryanse\system\service\SystemMathService;
 use xjryanse\logic\Debug;
+use Exception;
+
 /**
  * 商品价格计算式（适用于配送费计算）
  */
@@ -12,6 +15,7 @@ class GoodsPrizeKeyCalcService {
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    use \xjryanse\traits\MainModelQueryTrait;
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrizeKeyCalc';
@@ -21,33 +25,31 @@ class GoodsPrizeKeyCalcService {
      * @param type $prizeKeyId
      * @param type $data
      */
-    public static function prizeKeyIdCalc($prizeKeyId, $data){
+    public static function prizeKeyIdCalc($prizeKeyId, $data) {
         $scopeField = GoodsPrizeKeyService::getInstance($prizeKeyId)->fScopeField();
-        if(!$scopeField){
-            throw new Exception('分段函数分段字段不能为空，请联系开发');
+        if (!$scopeField) {
+            throw new Exception('分段函数分段字段不能为空，请联系开发' . $prizeKeyId);
         }
-        $value      = Arrays::value($data, $scopeField, 0);
-        $con[] = ['prize_key_id','=',$prizeKeyId];
-        $lists  = self::lists($con);
+        $value = Arrays::value($data, $scopeField, 0);
+        $con[] = ['prize_key_id', '=', $prizeKeyId];
+        $lists = self::lists($con);
         //$lists  = self::staticConList($con);
-        Debug::debug('prizeKeyIdCalc的分段函数列表',$lists);
-        foreach( $lists as $v){
-            if(($v['min_val'] < $value || ($v['min_val'] == $value && $v['min_contain'])) 
-                    && ($v['max_val'] > $value || ($v['max_val'] == $value && $v['max_contain']))){
-                $key       = $v['math_key'];
+        Debug::debug('prizeKeyIdCalc的分段函数列表', $lists);
+        foreach ($lists as $v) {
+            if (($v['min_val'] < $value || ($v['min_val'] == $value && $v['min_contain'])) && ($v['max_val'] > $value || ($v['max_val'] == $value && $v['max_contain']))) {
+                $key = $v['math_key'];
                 // 固定参数
-                $fixedData = json_decode($v['fixed_data'],JSON_UNESCAPED_UNICODE);
+                $fixedData = json_decode($v['fixed_data'], JSON_UNESCAPED_UNICODE);
                 // 带入计算
-                Debug::debug('prizeKeyIdCalc的计算key',$key);
-                Debug::debug('prizeKeyIdCalc的计算数据',array_merge($data,$fixedData));
-                return SystemMathService::calByKey($key, array_merge($data,$fixedData));
+                Debug::debug('prizeKeyIdCalc的计算key', $key);
+                Debug::debug('prizeKeyIdCalc的计算数据', array_merge($data, $fixedData));
+                return SystemMathService::calByKey($key, array_merge($data, $fixedData));
             }
         }
         //没有匹配到，返回0;
         return 0;
     }
-    
-    
+
     /**
      * 钩子-保存前
      */

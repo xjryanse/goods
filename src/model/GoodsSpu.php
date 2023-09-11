@@ -7,6 +7,9 @@ namespace xjryanse\goods\model;
 class GoodsSpu extends Base
 {
     use \xjryanse\traits\ModelTrait;
+    
+    public static $picFields = ['main_pic'];
+    
     /**
      * 商品图标
      * @param type $value

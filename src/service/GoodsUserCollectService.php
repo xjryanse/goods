@@ -10,6 +10,7 @@ class GoodsUserCollectService {
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    use \xjryanse\traits\MainModelQueryTrait;
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsUserCollect';
@@ -17,12 +18,12 @@ class GoodsUserCollectService {
     /**
      * 用户收藏商品
      */
-    public static function collect($userId,$spuId){
+    public static function collect($userId, $spuId) {
         $data['user_id'] = $userId;
         $data['spu_id'] = $spuId;
         return self::save($data);
     }
-    
+
     /**
      *
      */
@@ -43,10 +44,10 @@ class GoodsUserCollectService {
     public function fCompanyId() {
         return $this->getFFieldValue(__FUNCTION__);
     }
-    
+
     public function fCustomerId() {
         return $this->getFFieldValue(__FUNCTION__);
-    }    
+    }
 
     /**
      * 
@@ -61,6 +62,7 @@ class GoodsUserCollectService {
     public function fMainPic() {
         return $this->getFFieldValue(__FUNCTION__);
     }
+
     /**
      * 
      */
