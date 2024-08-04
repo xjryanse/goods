@@ -2,9 +2,9 @@
 namespace xjryanse\goods\model;
 
 /**
- * 商品价格设置
+ * 商品SPU
  */
-class GoodsPrize extends Base
+class GoodsTear extends Base
 {
     use \xjryanse\traits\ModelUniTrait;
     // 20230516:数据表关联字段
@@ -14,7 +14,14 @@ class GoodsPrize extends Base
             // 去除prefix的表名
             'uni_name'  =>'goods',
             'uni_field' =>'id',
+            'del_check' => true,
+        ],
+        [
+            'field'     =>'tear_goods_id',
+            // 去除prefix的表名
+            'uni_name'  =>'goods',
+            'uni_field' =>'id',
+            'del_check' => true,
         ]
     ];
-
 }

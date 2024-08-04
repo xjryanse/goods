@@ -1,28 +1,11 @@
 <?php
 
-namespace xjryanse\goods\service;
-
-use xjryanse\logic\Debug;
-use think\Db;
-use Exception;
+namespace xjryanse\goods\service\prize;
 
 /**
- * 商品明细
+ * 触发动作
  */
-class GoodsBrandService {
-
-    use \xjryanse\traits\DebugTrait;
-    use \xjryanse\traits\InstTrait;
-    use \xjryanse\traits\MainModelTrait;
-    use \xjryanse\traits\MainModelRamTrait;
-    use \xjryanse\traits\MainModelCacheTrait;
-    use \xjryanse\traits\MainModelCheckTrait;
-    use \xjryanse\traits\MainModelGroupTrait;
-    use \xjryanse\traits\MainModelQueryTrait;
-
-
-    protected static $mainModel;
-    protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsBrand';
+trait FieldTraits{
 
     /**
      *
@@ -45,21 +28,59 @@ class GoodsBrandService {
         return $this->getFFieldValue(__FUNCTION__);
     }
 
-    public function fCustomerId() {
+    /**
+     * 归属价格
+     */
+    public function fPid() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 
     /**
-     * 商品详情表
+     * 商品id
      */
-    public function fAttrName() {
+    public function fGoodsId() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 
     /**
-     * 商品详情表id
+     * 费用类型:次
      */
-    public function fAttrValue() {
+    public function fPrizeType() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+
+    /**
+     * 费用key
+     */
+    public function fPrizeKey() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+
+    /**
+     * 费用名称
+     */
+    public function fPrizeName() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+
+    /**
+     * 归属角色
+     */
+    public function fBelongRole() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+
+    /**
+     * 归属角色
+     */
+    public function fBelongUserId() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+
+    /**
+     * 报价
+     */
+    public function fPrize() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 
@@ -132,5 +153,4 @@ class GoodsBrandService {
     public function fUpdateTime() {
         return $this->getFFieldValue(__FUNCTION__);
     }
-
 }

@@ -22,12 +22,22 @@ class GoodsService {
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    use \xjryanse\traits\MainModelRamTrait;
+    use \xjryanse\traits\MainModelCacheTrait;
+    use \xjryanse\traits\MainModelCheckTrait;
+    use \xjryanse\traits\MainModelGroupTrait;
     use \xjryanse\traits\MainModelQueryTrait;
+
+    use \xjryanse\traits\StaticModelTrait;
     use \xjryanse\traits\SubServiceTrait;
     use \xjryanse\traits\ObjectAttrTrait;
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\Goods';
+    
+    //直接执行后续触发动作
+    protected static $directAfter = true;
+    
     protected static $fixedFields = ['company_id', 'creater', 'create_time', 'sale_type'];
     // 商品的价格列表
     protected $prizeList = [];
@@ -45,13 +55,17 @@ class GoodsService {
             'keyField' => 'goods_id',
             'master' => true
         ],
-        'goodsPrize' => [
-            'class' => '\\xjryanse\\goods\\service\\GoodsPrizeService',
-            'keyField' => 'goods_id',
-            'master' => true
-        ]
+//        'goodsPrize' => [
+//            'class' => '\\xjryanse\\goods\\service\\GoodsPrizeService',
+//            'keyField' => 'goods_id',
+//            'master' => true
+//        ]
     ];
-
+    
+    use \xjryanse\goods\service\index\FieldTraits;
+    use \xjryanse\goods\service\index\CalTraits;
+    use \xjryanse\goods\service\index\TriggerTraits;
+    use \xjryanse\goods\service\index\DimTraits;
     /**
      * 获取商品价格数组
      */
@@ -322,53 +336,7 @@ class GoodsService {
         return $data;
     }
 
-    /**
-     * 20220701
-     * @param type $data
-     * @param type $uuid
-     * @return type
-     * @throws Exception
-     */
-    public static function ramPreSave(&$data, $uuid) {
-        $notices['goods_name'] = '商品名称必须';
-        // $notices['goods_pic']   = '商品主图必须';
-        $notices['spu_id'] = 'spu_id必须';
-        $notices['cate_id'] = 'cate_id必须';
-        //20210731谁发谁卖
-        $data['seller_user_id'] = Arrays::value($data, 'seller_user_id') ?: session(SESSION_USER_ID);
-        $spuId = Arrays::value($data, 'spu_id');
-        if ($spuId) {
-            $data['cate_id'] = GoodsSpuService::getInstance($spuId)->fCateId();
-            $data['sale_type'] = GoodsSpuService::getInstance($spuId)->fSaleType();
-        }
-        //'goods_pic',只有normal时，goods_pic必须
-        DataCheck::must($data, ['goods_name', 'spu_id'], $notices);
 
-        if (!Arrays::value($data, "goods_table") && !Arrays::value($data, "goods_table_id")) {
-            $data['goods_table'] = self::mainModel()->getTable();
-            $data['goods_table_id'] = $uuid;
-        }
-        $prizeKeys = GoodsPrizeTplService::saleTypeList($data['sale_type'], session(SESSION_COMPANY_ID));
-        if (!$prizeKeys) {
-            throw new Exception('销售类型' . $data['sale_type'] . '未配置费用信息，请联系开发人员设置');
-        }
-
-        return $data;
-    }
-
-    /**
-     * 20220701
-     * @param type $data
-     * @param type $uuid
-     */
-    public static function ramPreUpdate(&$data, $uuid) {
-        $info = self::getInstance($uuid)->get();
-        if (isset($data['sellerGoodsPrize']) || isset($data['plateGoodsPrize'])) {
-            $sellerPrize = isset($data['sellerGoodsPrize']) ? $data['sellerGoodsPrize'] : $info['sellerGoodsPrize'];
-            $platePrize = isset($data['plateGoodsPrize']) ? $data['plateGoodsPrize'] : $info['plateGoodsPrize'];
-            $data['goodsPrize'] = $sellerPrize + $platePrize;
-        }
-    }
 
     /**
      * 额外输入信息
@@ -383,43 +351,7 @@ class GoodsService {
         GoodsSpuService::getInstance($spuId)->updatePrize();
     }
 
-    /**
-     * 20220701
-     * @param type $data
-     * @param type $uuid
-     */
-    public static function ramAfterSave(&$data, $uuid) {
-        $info = self::getInstance($uuid)->get();
-        $info['goodsPrize'] = Arrays::value($info, 'sellerGoodsPrize', 0) + Arrays::value($info, 'plateGoodsPrize', 0);
-        //商品价格冗余记录
-        self::getInstance($uuid)->goodsIsOnSyncRam();
-        //一口价写入价格表
-        self::getInstance($uuid)->setGoodsPrizeArrRam();
-        //更新spu的价格
-        $spuId = self::getInstance($uuid)->fSpuId();
-        // GoodsSpuService::getInstance( $spuId )->updatePrize();
-        // 20220701
-        GoodsSpuService::getInstance($spuId)->objAttrsPush('goods', $info);
-        GoodsSpuService::getInstance($spuId)->dataSyncRam();
-    }
-
-    /**
-     * 20220701
-     * @param type $data
-     * @param type $uuid
-     */
-    public static function ramAfterUpdate(&$data, $uuid) {
-        Debug::debug('ramAfterUpdate', $data);
-        //商品价格冗余记录
-        self::getInstance($uuid)->goodsIsOnSyncRam();
-        //一口价写入价格表
-        self::getInstance($uuid)->setGoodsPrizeArrRam();
-        //更新spu的价格
-        $spuId = self::getInstance($uuid)->fSpuId();
-        //20220701：更新属性
-        GoodsSpuService::getInstance($spuId)->objAttrsUpdate('goods', $uuid, $data);
-        GoodsSpuService::getInstance($spuId)->dataSyncRam();
-    }
+   
 
     /**
      * 额外输入信息
@@ -517,12 +449,12 @@ class GoodsService {
             $con[] = ['prize_key', '=', $key['prize_key']];
             $prizeId = GoodsPrizeService::mainModel()->where($con)->value('id');
             $goodsPrizeArr = [
-                "id" => $prizeId ?: self::mainModel()->newId(),
-                "goods_id" => $this->uuid,
-                "company_id" => Arrays::value($info, 'company_id'),
-                "prize_key" => $key['prize_key'],
-                "prize_name" => $key['prize_name'],
-                "belong_role" => $key['belong_role'],
+                "id"            => $prizeId ?: self::mainModel()->newId(),
+                "goods_id"      => $this->uuid,
+                "company_id"    => Arrays::value($info, 'company_id'),
+                "prize_key"     => $key['prize_key'],
+                "prize_name"    => $key['prize_name'],
+                "belong_role"   => $key['belong_role'],
                 "prize" => Arrays::value($info, $key['prize_key']),
                 "creater" => Arrays::value($info, 'creater'),
             ];
@@ -581,219 +513,16 @@ class GoodsService {
     }
 
     /**
-     *
+     * 更新商品金额
+     * @createTime 20231027
+     * @return type
      */
-    public function fId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
+    public function goodsPrizeUpdateRam() {
+        $data['sellerGoodsPrize']   = $this->calSellerGoodsPrize();
+        $data['plateGoodsPrize']    = $this->calPlateGoodsPrize();
+        $data['goodsPrize']         = $data['sellerGoodsPrize'] + $data['plateGoodsPrize'];
 
-    /**
-     *
-     */
-    public function fAppId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    public function fSpuId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     *
-     */
-    public function fCompanyId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    public function fCustomerId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 商品图片
-     */
-    public function fGoodsPic() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 商品详情表
-     */
-    public function fGoodsTable() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 商品详情表id
-     */
-    public function fGoodsTableId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 商品名称
-     */
-    public function fGoodsName() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-    public function fGoodsDesc() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-    /**
-     * 归属店铺
-     */
-    public function fShopId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 销售类型：商标授权、商标租用、购买商标、购买网店
-     */
-    public function fSaleType() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 是否上架：0否，1是
-     */
-    public function fIsOn() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 库存量
-     */
-    public function fStock() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 库存量
-     */
-    public function fSellerUserId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 审核状态：待审核，已同意，已拒绝
-     */
-    public function fAuditStatus() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 商品状态：
-      offsale下架
-      onsale上架
-      authorize:授权中
-      buying:购买中
-      renting:租赁中
-      transferd:已过户(相当于失效)
-     */
-    public function fGoodsStatus() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 审核用户
-     */
-    public function fAuditUserId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 审核意见
-     */
-    public function fAuditDescribe() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 浏览人次
-     */
-    public function fScanTimes() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 浏览人数
-     */
-    public function fScanUsers() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 排序
-     */
-    public function fSort() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 状态(0禁用,1启用)
-     */
-    public function fStatus() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 有使用(0否,1是)
-     */
-    public function fHasUsed() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 锁定（0：未锁，1：已锁）
-     */
-    public function fIsLock() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 锁定（0：未删，1：已删）
-     */
-    public function fIsDelete() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 备注
-     */
-    public function fRemark() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 创建者，user表
-     */
-    public function fCreater() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 更新者，user表
-     */
-    public function fUpdater() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 创建时间
-     */
-    public function fCreateTime() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 更新时间
-     */
-    public function fUpdateTime() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    public function fUnit() {
-        return $this->getFFieldValue(__FUNCTION__);
+        return $this->doUpdateRamClearCache($data);
     }
 
 }

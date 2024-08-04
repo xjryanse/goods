@@ -19,7 +19,11 @@ class ViewGoodsSingleSkuService {
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    use \xjryanse\traits\MainModelCacheTrait;
+    use \xjryanse\traits\MainModelCheckTrait;
+    use \xjryanse\traits\MainModelGroupTrait;
     use \xjryanse\traits\MainModelQueryTrait;
+
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\ViewGoodsSingleSku';
@@ -82,7 +86,7 @@ class ViewGoodsSingleSkuService {
 
         // Debug::debug('----------------',$info);
         // Debug::debug('GoodsSpuService的保存之后的数据',$info);
-        $keys = ['name' => 'goods_name', 'main_pic' => 'goods_pic', 'goods_desc' => 'goods_desc'];
+        $keys = ['name' => 'goods_name', 'main_pic' => 'goods_pic', 'goods_desc' => 'goods_desc','rd_code' => 'rd_code','goods_spc'=>'goods_spc'];
         $infoArr = is_object($info) ? $info->toArray() : $info;
         $data = Arrays::keyReplace($infoArr, $keys);
         $data['sellerGoodsPrize'] = Arrays::value($param, 'sellerGoodsPrize', 0);

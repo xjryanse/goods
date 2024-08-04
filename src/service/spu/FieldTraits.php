@@ -1,29 +1,11 @@
 <?php
-
-namespace xjryanse\goods\service;
-
-use xjryanse\logic\Debug;
-use think\Db;
-use Exception;
+namespace xjryanse\goods\service\spu;
 
 /**
- * 商品明细
+ * 分页复用列表
  */
-class GoodsBrandService {
-
-    use \xjryanse\traits\DebugTrait;
-    use \xjryanse\traits\InstTrait;
-    use \xjryanse\traits\MainModelTrait;
-    use \xjryanse\traits\MainModelRamTrait;
-    use \xjryanse\traits\MainModelCacheTrait;
-    use \xjryanse\traits\MainModelCheckTrait;
-    use \xjryanse\traits\MainModelGroupTrait;
-    use \xjryanse\traits\MainModelQueryTrait;
-
-
-    protected static $mainModel;
-    protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsBrand';
-
+trait FieldTraits{
+   
     /**
      *
      */
@@ -50,16 +32,32 @@ class GoodsBrandService {
     }
 
     /**
-     * 商品详情表
+     * 
      */
-    public function fAttrName() {
+    public function fName() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+
+    //分类id
+    public function fCateId() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+
+    public function fSaleType() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 
     /**
-     * 商品详情表id
+     * 
      */
-    public function fAttrValue() {
+    public function fMainPic() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+
+    /**
+     * 
+     */
+    public function fSubPics() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 
@@ -132,5 +130,7 @@ class GoodsBrandService {
     public function fUpdateTime() {
         return $this->getFFieldValue(__FUNCTION__);
     }
+
+
 
 }

@@ -18,11 +18,20 @@ class GoodsPrizeService {
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    use \xjryanse\traits\MainModelRamTrait;
+    use \xjryanse\traits\MainModelCacheTrait;
+    use \xjryanse\traits\MainModelCheckTrait;
+    use \xjryanse\traits\MainModelGroupTrait;
     use \xjryanse\traits\MainModelQueryTrait;
+
+    use \xjryanse\traits\ObjectAttrTrait;
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsPrize';
 
+    use \xjryanse\goods\service\prize\TriggerTraits;
+    use \xjryanse\goods\service\prize\FieldTraits;
+    
     public function get($cache = 0) {
         return $this->commGet($cache);
     }
@@ -36,6 +45,7 @@ class GoodsPrizeService {
         //价格key
         $keys = GoodsPrizeTplService::columnPrizeKeysBySaleTypeMainKey($goodsInfo['sale_type'], $mainKey);
         $prize = self::keysPrize($goodsId, $keys);
+        Debug::debug('价格$keys', $keys);
         Debug::debug('价格', $prize);
         return $prize;
     }
@@ -164,7 +174,13 @@ class GoodsPrizeService {
     public static function checkSubMoneyBatch() {
         
     }
-
+    
+    public static function extraDetails($ids) {
+        return self::commExtraDetails($ids, function($lists) use ($ids) {
+                    return $lists;
+                },true);
+    }
+    
     /**
      * 额外输入信息
      */
@@ -295,153 +311,6 @@ class GoodsPrizeService {
         $prize['total'] = self:: sumGoodsPrizeByPrizeKeys($goodsId, $finalKeys);
 
         return $prize;
-    }
-
-    /**
-     *
-     */
-    public function fId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     *
-     */
-    public function fAppId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     *
-     */
-    public function fCompanyId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 归属价格
-     */
-    public function fPid() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 商品id
-     */
-    public function fGoodsId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 费用类型:次
-     */
-    public function fPrizeType() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 费用key
-     */
-    public function fPrizeKey() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 费用名称
-     */
-    public function fPrizeName() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 归属角色
-     */
-    public function fBelongRole() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 归属角色
-     */
-    public function fBelongUserId() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 报价
-     */
-    public function fPrize() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 排序
-     */
-    public function fSort() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 状态(0禁用,1启用)
-     */
-    public function fStatus() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 有使用(0否,1是)
-     */
-    public function fHasUsed() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 锁定（0：未锁，1：已锁）
-     */
-    public function fIsLock() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 锁定（0：未删，1：已删）
-     */
-    public function fIsDelete() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 备注
-     */
-    public function fRemark() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 创建者，user表
-     */
-    public function fCreater() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 更新者，user表
-     */
-    public function fUpdater() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 创建时间
-     */
-    public function fCreateTime() {
-        return $this->getFFieldValue(__FUNCTION__);
-    }
-
-    /**
-     * 更新时间
-     */
-    public function fUpdateTime() {
-        return $this->getFFieldValue(__FUNCTION__);
     }
 
 }

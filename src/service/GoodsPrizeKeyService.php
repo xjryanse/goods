@@ -18,7 +18,13 @@ class GoodsPrizeKeyService {
     use \xjryanse\traits\DebugTrait;
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    use \xjryanse\traits\MainModelRamTrait;
+    use \xjryanse\traits\MainModelCacheTrait;
+    use \xjryanse\traits\MainModelCheckTrait;
+    use \xjryanse\traits\MainModelGroupTrait;
     use \xjryanse\traits\MainModelQueryTrait;
+
+    use \xjryanse\traits\MainModelComCateLevelQueryTrait;
 
 // 静态模型：配置式数据表
     use \xjryanse\traits\StaticModelTrait;
@@ -87,13 +93,13 @@ class GoodsPrizeKeyService {
     public static function orderPrizeKeyGetPrize($orderId, $prizeKey) {
         Debug::debug('orderPrizeKeyGetPrize，调用', $orderId . '_' . $prizeKey);
         $inst = OrderService::getInstance($orderId)->orderSaleTypeInst();
-
         if (!$inst->hasPrizeKey($prizeKey)) {
             // 销售类型没有这个价格，返回0；
             return 0;
         }
 
         $info = self::getByPrizeKey($prizeKey);
+        // Debug::dump($info);
         Debug::debug('orderPrizeKeyGetPrize，的getByPrizeKey_' . $prizeKey, $info);
         // 费用群组：商品；订单
         $keyGroup = Arrays::value($info, 'key_group');
@@ -163,7 +169,12 @@ class GoodsPrizeKeyService {
      */
     public static function getByPrizeKey($prizeKey) {
         $con[] = ['prize_key', '=', $prizeKey];
-        return self::staticConFind($con);
+        $res = self::staticConFind($con);
+        if(!$res){
+            // 20231208:增加通用配置
+            $res = self::comCateLevelFind($con);
+        }
+        return $res;
     }
 
     /**
@@ -175,7 +186,11 @@ class GoodsPrizeKeyService {
         $info = self::staticConFind($con1);
         Debug::debug('keyBelongRole的信息', $info);
         if (!$info) {
-            throw new Exception('价格' . $key . '不存在');
+            // 20231208
+            $info = self::comCateLevelFind($con1);
+            if(!$info){
+                throw new Exception('价格' . $key . '不存在');
+            }
         }
         if ($info['from_role'] == $info['to_role']) {
             return $info['from_role'];

@@ -1,87 +1,12 @@
 <?php
 
-namespace xjryanse\goods\service;
-
-use xjryanse\logic\Arrays;
+namespace xjryanse\goods\service\index;
 
 /**
- * 商品明细
+ * 分页复用列表
  */
-class GoodsGroupService {
-
-    use \xjryanse\traits\DebugTrait;
-    use \xjryanse\traits\InstTrait;
-    use \xjryanse\traits\MainModelTrait;
-    use \xjryanse\traits\MainModelRamTrait;
-    use \xjryanse\traits\MainModelCacheTrait;
-    use \xjryanse\traits\MainModelCheckTrait;
-    use \xjryanse\traits\MainModelGroupTrait;
-    use \xjryanse\traits\MainModelQueryTrait;
-
-
-    protected static $mainModel;
-    protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsGroup';
-
-    /**
-     * 钩子-保存前
-     */
-    public static function extraPreSave(&$data, $uuid) {
-        
-    }
-
-    /**
-     * 钩子-保存后
-     */
-//    public static function extraAfterSave(&$data, $uuid) {
-//
-//    }
-
-    /**
-     * 钩子-更新前
-     */
-    public static function extraPreUpdate(&$data, $uuid) {
-        
-    }
-
-    /**
-     * 钩子-更新后
-     */
-//    public static function extraAfterUpdate(&$data, $uuid) {
-//
-//    }    
-
-    /**
-     * 钩子-删除前
-     */
-    public function extraPreDelete() {
-        
-    }
-
-    /**
-     * 钩子-删除后
-     */
-    public function extraAfterDelete() {
-        
-    }
-
-    public static function extraDetails($ids) {
-        //数组返回多个，非数组返回一个
-        $isMulti = is_array($ids);
-        if (!is_array($ids)) {
-            $ids = [$ids];
-        }
-        $con[] = ['id', 'in', $ids];
-        $lists = self::selectX($con);
-
-        $spuArr = GoodsSpuService::groupBatchCount('group_id', $ids);
-        foreach ($lists as &$v) {
-            //spu数
-            $v['spuCounts'] = Arrays::value($spuArr, $v['id'], 0);
-        }
-
-        return $isMulti ? $lists : $lists[0];
-    }
-
+trait FieldTraits{
+   
     /**
      *
      */
@@ -96,6 +21,10 @@ class GoodsGroupService {
         return $this->getFFieldValue(__FUNCTION__);
     }
 
+    public function fSpuId() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+
     /**
      *
      */
@@ -104,6 +33,13 @@ class GoodsGroupService {
     }
 
     public function fCustomerId() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+
+    /**
+     * 商品图片
+     */
+    public function fGoodsPic() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 
@@ -127,7 +63,9 @@ class GoodsGroupService {
     public function fGoodsName() {
         return $this->getFFieldValue(__FUNCTION__);
     }
-
+    public function fGoodsDesc() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
     /**
      * 归属店铺
      */
@@ -278,6 +216,10 @@ class GoodsGroupService {
      * 更新时间
      */
     public function fUpdateTime() {
+        return $this->getFFieldValue(__FUNCTION__);
+    }
+
+    public function fUnit() {
         return $this->getFFieldValue(__FUNCTION__);
     }
 

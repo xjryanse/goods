@@ -2,8 +2,6 @@
 
 namespace xjryanse\goods\service;
 
-use xjryanse\logic\Cachex;
-
 /**
  * 商品价格设置
  */
@@ -11,12 +9,26 @@ class GoodsTypePrizeKeyService {
 
     use \xjryanse\traits\InstTrait;
     use \xjryanse\traits\MainModelTrait;
+    use \xjryanse\traits\MainModelRamTrait;
+    use \xjryanse\traits\MainModelCacheTrait;
+    use \xjryanse\traits\MainModelCheckTrait;
+    use \xjryanse\traits\MainModelGroupTrait;
     use \xjryanse\traits\MainModelQueryTrait;
+
     use \xjryanse\traits\StaticModelTrait;
 
     protected static $mainModel;
     protected static $mainModelClass = '\\xjryanse\\goods\\model\\GoodsTypePrizeKey';
 
+    public static function extraDetails($ids) {
+        return self::commExtraDetails($ids, function($lists) use ($ids) {
+                    foreach($lists as &$v){
+                        $v['goodsTypeId'] = GoodsTypeService::saleTypeToId($v['sale_type']);
+                    }
+                    return $lists;
+                },true);
+    }
+    
     /**
      * 20220814优 销售类型
      * @param type $prizeKey
@@ -35,11 +47,6 @@ class GoodsTypePrizeKeyService {
      * @return type
      */
     public static function getPrizeKeys($saleType) {
-        //带缓存
-//        return Cachex::funcGet('GoodsTypePrizeKeyService_getPrizeKeys'.$saleType, function() use ($saleType){
-//            $con[] = ['sale_type','=',$saleType];
-//            return self::mainModel()->where($con)->column('distinct prize_key');
-//        });
         // 20220814优化
         $con[] = ['sale_type', '=', $saleType];
         return array_unique(self::staticConColumn('prize_key', $con));

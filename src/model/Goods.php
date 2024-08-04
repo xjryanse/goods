@@ -9,6 +9,34 @@ class Goods extends Base
 {
     use \xjryanse\traits\ModelTrait;
     
+    
+    use \xjryanse\traits\ModelUniTrait;
+    // 20230516:数据表关联字段
+    public static $uniFields = [
+        [
+            'field'     =>'spu_id',
+            // 去除prefix的表名
+            'uni_name'  =>'goods_spu',
+            'uni_field' =>'id',
+            'del_check' => true,
+        ],
+        [
+            'field'     =>'cate_id',
+            // 去除prefix的表名
+            'uni_name'  =>'goods_cate',
+            'uni_field' =>'id',
+            'del_check' => true,
+        ],
+        [
+            'field'     =>'sale_type',
+            // 去除prefix的表名
+            'uni_name'  =>'goods_type',
+            'uni_field' =>'sale_type',
+            'del_check' => true,
+        ]
+    ];
+    
+    
     public static $picFields = ['goods_pic'];
 
     /**
